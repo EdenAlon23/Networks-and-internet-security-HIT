@@ -1,0 +1,134 @@
+<header class="top"><div class="eyebrow">Chapter 02</div><h1>OSINT and reconnaissance</h1><p class="lead">Every attack starts with reconnaissance. What an attacker looks for about an organization and its people, the three levels of recon (passive, semi-passive, active), the tools for each and the packets they produce, and the social engineering that turns information into access.</p><nav class="toc" aria-label="Sections"><a href="#why">Why recon</a><a href="#levels">Three levels</a><a href="#targets">Organizations</a><a href="#people">People</a><a href="#stuxnet">Stuxnet</a><a href="#passive">Passive tools</a><a href="#active">Active recon</a><a href="#se">Social engineering</a><a href="#tree">Attack tree</a><a href="#review">Review</a></nav></header>
+<section id="why">
+<h2><span class="n">1</span>Reconnaissance: why attackers start here</h2>
+<div class="col"><p>The Oxford dictionary defines reconnaissance as gathering information about an area for military purposes. A cyber attack is no different: the attacker spends a lot of time observing and probing the target network, because they need a good estimate of the enemy's strengths and weaknesses before acting.</p><p><b>OSINT</b> (Open Source INTelligence) is finding, selecting and collecting information from publicly available sources and analysing it to produce useful military, political or business intelligence.</p></div><div class="why"><span class="tag">Why it works</span><p>Each piece alone looks harmless: a job ad, a photo from the office, a DNS record. Together they map the organization: which technologies, who works there, who has access, what a legitimate email looks like. The better the recon, the shorter and quieter the attack.</p></div><div class="real"><span class="tag">Real world</span><p>In the Lockheed Martin Cyber Kill Chain and in MITRE ATT&amp;CK, reconnaissance is the first stage. Red teams and pentesters start every engagement with OSINT; threat-intelligence teams do the same on their own organization to see what an attacker would see.</p></div>
+</section>
+<section id="levels">
+<h2><span class="n">2</span>Three levels of reconnaissance</h2>
+<figure>
+<svg aria-label="Levels of reconnaissance" role="img" viewBox="0 0 720 210" width="720">
+<defs><lineargradient id="g1" x1="1" x2="0"><stop offset="0" stop-color="var(--def)"></stop><stop offset=".5" stop-color="var(--warn)"></stop><stop offset="1" stop-color="var(--atk)"></stop></lineargradient></defs>
+<rect fill="url(#g1)" height="14" rx="7" width="660" x="30" y="40"></rect>
+<text fill="var(--muted)" font-size="12" text-anchor="end" x="690" y="30">invisible to target</text>
+<text fill="var(--muted)" font-size="12" text-anchor="start" x="30" y="30">target can detect</text>
+<g>
+<rect fill="var(--def-soft)" height="120" rx="10" stroke="var(--def)" width="210" x="480" y="75"></rect>
+<text font-weight="700" text-anchor="middle" x="585" y="100">Passive</text>
+<text font-size="12" text-anchor="middle" x="585" y="122">never touch the target</text>
+<text fill="var(--muted)" font-size="12" text-anchor="middle" x="585" y="145">WHOIS, Google, LinkedIn,</text>
+<text fill="var(--muted)" font-size="12" text-anchor="middle" x="585" y="163">Shodan, social networks</text>
+<rect fill="var(--warn-soft)" height="120" rx="10" stroke="var(--warn)" width="210" x="255" y="75"></rect>
+<text font-weight="700" text-anchor="middle" x="360" y="100">Semi-passive</text>
+<text font-size="12" text-anchor="middle" x="360" y="122">looks like normal browsing</text>
+<text fill="var(--muted)" font-size="12" text-anchor="middle" x="360" y="145">browsing the site, DNS queries,</text>
+<text fill="var(--muted)" font-size="12" text-anchor="middle" x="360" y="163">reading public documents</text>
+<rect fill="var(--atk-soft)" height="120" rx="10" stroke="var(--atk)" width="210" x="30" y="75"></rect>
+<text font-weight="700" text-anchor="middle" x="135" y="100">Active</text>
+<text font-size="12" text-anchor="middle" x="135" y="122">direct contact with target</text>
+<text fill="var(--muted)" font-size="12" text-anchor="middle" x="135" y="145">Nmap, Banner grabbing,</text>
+<text fill="var(--muted)" font-size="12" text-anchor="middle" x="135" y="163">zone transfer, vulnerability scans</text>
+</g>
+</svg>
+<figcaption>Lecture: passive should never be detected. Semi-passive should look like normal traffic. Active is expected to be detected (IDS, logs).</figcaption>
+</figure><div class="col"><p>The more active you get, the more accurate and current the information, but you pay in exposure. A sophisticated attacker exhausts passive sources first, and only then touches the target, focused and slowly.</p></div><div class="tbl"><table><thead><tr><th>Level</th><th>Packets that reach the target</th><th>What the target can log</th></tr></thead><tbody><tr><td>Passive</td><td>none (queries go to Google, Shodan, WHOIS servers, LinkedIn)</td><td>nothing</td></tr><tr><td>Semi-passive</td><td>normal-looking ones: HTTP GETs to the public site, DNS queries to its public name servers</td><td>an ordinary visitor IP in the web/DNS logs</td></tr><tr><td>Active</td><td>crafted probes: SYNs to many ports, AXFR requests, malformed requests for banners</td><td>IDS alerts, firewall logs, connection logs</td></tr></tbody></table></div>
+</section>
+<section id="targets">
+<h2><span class="n">3</span>What to look for about an organization</h2>
+<figure>
+<svg aria-label="Target map" role="img" viewBox="0 0 700 330" width="700">
+<circle cx="350" cy="165" fill="var(--accent-soft)" r="62" stroke="var(--accent)" stroke-width="2"></circle>
+<text font-weight="700" text-anchor="middle" x="350" y="160">The organization</text><text fill="var(--muted)" font-size="12" text-anchor="middle" x="350" y="180">Target</text>
+<g font-size="13" stroke="var(--line)">
+<line x1="350" x2="350" y1="103" y2="45"></line><line x1="402" x2="530" y1="130" y2="60"></line><line x1="412" x2="560" y1="165" y2="165"></line><line x1="402" x2="530" y1="200" y2="275"></line><line x1="350" x2="350" y1="227" y2="290"></line><line x1="298" x2="170" y1="200" y2="275"></line><line x1="288" x2="140" y1="165" y2="165"></line><line x1="298" x2="170" y1="130" y2="60"></line>
+</g>
+<g font-size="13">
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="140" x="280" y="18"></rect><text text-anchor="middle" x="350" y="38">Domain names</text>
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="190" x="480" y="40"></rect><text text-anchor="middle" x="575" y="60">Internet footprint (IPs, servers)</text>
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="125" x="560" y="150"></rect><text text-anchor="middle" x="622" y="170">e-mail addresses</text>
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="200" x="470" y="262"></rect><text text-anchor="middle" x="570" y="282">structure and relationships</text>
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="170" x="265" y="290"></rect><text text-anchor="middle" x="350" y="310">social networks</text>
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="200" x="30" y="262"></rect><text text-anchor="middle" x="130" y="282">products and services</text>
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="125" x="15" y="150"></rect><text text-anchor="middle" x="77" y="170">job openings</text>
+<rect fill="var(--surface)" height="30" rx="6" stroke="var(--line)" width="200" x="30" y="40"></rect><text text-anchor="middle" x="130" y="60">physical sites and datacenters</text>
+</g>
+</svg>
+</figure><div class="grid"><div class="box"><h4>Corporate OSINT · physical</h4><p>Locations, footprint (how many branches), competitors.</p></div><div class="box"><h4>Corporate OSINT · logical</h4><p>Product lines, job openings, meetings, donations and relationships.</p></div></div><div class="atk"><span class="tag">Exploit</span><p>Job ads are a gold mine: "network admin with Cisco ASA, VMware and SAP experience" tells you exactly what is installed. The org chart tells you whom to impersonate (the CEO) and whom to target (secretary, finance). The email format (first.last@) lets you generate a phishing target list.</p></div><div class="col"><h3>Maltego</h3><p>A visual tool: give it an entity (domain, person, email) and run <b>transforms</b> that find related entities: subdomains, IPs, emails, profiles. The result is a relationship graph of the organization. Lecture example: a Russian social network site that "volunteered" which software it runs.</p></div>
+</section>
+<section id="people">
+<h2><span class="n">4</span>OSINT on people</h2>
+<div class="col"><p>Information about employees is information about the employer. The employee is usually the easiest door into the organization.</p></div><div class="tbl"><table><thead><tr><th>Source</th><th>What you learn</th><th>How an attacker uses it</th></tr></thead><tbody><tr><td>Social networks</td><td>locations (metadata and GPS in photos), daily routine, whom they meet, check-ins, social style</td><td>timing, impersonating a friend, "Please Rob Me": knowing when the house is empty</td></tr><tr><td>Court rulings, lawsuits, donations, party affiliation</td><td>personal and sensitive details</td><td>blackmail, believable pretexting</td></tr><tr><td>Training and courses (LinkedIn)</td><td>skills, business contacts</td><td>fake job offer, conference invitation with a malicious file</td></tr><tr><td>Usernames in forums, blogs, mailing lists</td><td>username habits, technologies, hobbies</td><td>password guessing (dog's name + year), finding more accounts</td></tr><tr><td>Personal and work email, personal site and IP</td><td>more entry points</td><td>tailored spear phishing, attacking a home computer</td></tr><tr><td>School, friends, family</td><td>social circles</td><td>"Hi, we studied together at HIT..."</td></tr></tbody></table></div><div class="real"><span class="tag">Real world</span><p>Tools: Pipl and PeopleFinder (people search), theHarvester (emails and subdomains), Sherlock (a username across sites), ExifTool (metadata in photos and documents). Covert gathering can be onsite (e.g. scanning Wi-Fi from a car near the building) or offsite (Google Earth, Street View).</p></div><div class="def"><span class="tag">Defense</span><p>A publishing policy for employees, stripping metadata from public documents, awareness training, non-guessable email formats, and monitoring what the organization exposes (attack surface management).</p></div>
+</section>
+<section id="stuxnet">
+<h2><span class="n">5</span>Stuxnet as an OSINT example</h2>
+<div class="col"><p>Stuxnet was a worm that attacked the centrifuges at Iran's Natanz enrichment plant (discovered 2010). It changed rotor speeds through Siemens PLCs while showing operators "normal" values.</p><p>The lecture shows public photos from the Iranian president's visit to the plant: the screens in the background show the SCADA interface with the centrifuge cascade layout, and another photo shows control components. Researcher Ralph Langner used exactly such photos to confirm that the worm targeted Natanz's specific configuration (the number of centrifuges per cascade).</p></div><div class="why"><span class="tag">The lesson</span><p>Even a top-secret facility leaks technical detail through PR photos. Whoever built the attack needed the exact configuration, and whoever investigated it could verify that from open sources.</p></div>
+</section>
+<section id="passive">
+<h2><span class="n">6</span>Passive recon tools</h2>
+<div class="grid"><div class="box"><h4>WHOIS (RFC 3912)</h4><p>Who registered the domain: name, address, phone, technical and admin contact emails, DNS servers, dates. Example: hit.ac.il shows a contact name and phone.<br><b>On the wire:</b> one TCP connection to port 43 of the registry, the domain name as text, the record back as text.<br><b>Exploit:</b> real names and emails for phishing, a phone number for pretexting. Today most registrars hide details (privacy, GDPR).</p></div><div class="box"><h4>nslookup / dig</h4><p>DNS queries: A (domain → IP), MX (mail servers), NS (authoritative servers), SOA (authority info), PTR / reverse (IP → name).<br><b>On the wire:</b> UDP 53 to your resolver; with <code>dig @ns1.target</code> straight to the target's server (semi-passive).<br><b>Exploit:</b> MX reveals the mail provider (Office 365?), reverse DNS reveals internal server names.</p></div><div class="box"><h4>Google dorking</h4><p><code>site:hit.ac.il</code> lists every indexed subdomain; also <code>filetype:pdf</code>, <code>intitle:"index of"</code>, <code>"@hit.ac.il"</code>.<br><b>Exploit:</b> documents that should not be public, forgotten login pages, config files.</p></div><div class="box"><h4>Subdomain enumeration</h4><p>Knock and similar scripts try a wordlist (mail, vpn, dev, test) as DNS queries. Today also crt.sh (Certificate Transparency logs list every certificate issued).<br><b>Exploit:</b> dev. and test. are less protected than the main site.</p></div><div class="box"><h4>Employees (LinkedIn, company site)</h4><p>Who works where in which role. Example: searching "Holon Institute of Technology" on LinkedIn.<br><b>Exploit:</b> a phishing target list and names to impersonate.</p></div><div class="box"><h4>Shodan</h4><p>A "search engine for devices": it scans the whole Internet and stores banners. Finds cameras, routers, SCADA systems and servers by version and location.<br><b>Exploit:</b> <code>port:3389 country:IL</code> or a specific vulnerable version, without sending one packet to the target.</p></div></div><div class="why"><span class="tag">Why Shodan is still "passive"</span><p>Shodan already scanned the target. The attacker only queries Shodan's database, so the target sees no traffic from the attacker. The same principle makes all the tools in this section undetectable.</p></div><div class="col"><p><b>Semi-passive</b>: browsing the organization's site like any user. Lecture example: the HIT site itself lists staff names, departments and services. The target only sees "another visitor" in its logs.</p></div>
+</section>
+<section id="active">
+<h2><span class="n">7</span>Active reconnaissance</h2>
+<div class="col"><p><b>Port scanning with nmap</b>: send probes to ports and see what answers. For each port the result is open, closed or filtered, plus the service name (http, ssh, smtp). Chapter 03 goes packet by packet.</p></div><figure>
+<svg aria-label="Port states" role="img" viewBox="0 0 700 300" width="700">
+<g font-size="13">
+<text font-weight="700" text-anchor="middle" x="600" y="22">Scanner</text><text font-weight="700" text-anchor="middle" x="100" y="22">Target</text>
+<line stroke="var(--line)" stroke-width="2" x1="600" x2="600" y1="30" y2="290"></line><line stroke="var(--line)" stroke-width="2" x1="100" x2="100" y1="30" y2="290"></line>
+<text fill="var(--def)" font-weight="700" text-anchor="end" x="690" y="62">open</text>
+<line marker-end="url(#ar)" stroke="var(--ink)" stroke-width="2" x1="595" x2="106" y1="55" y2="55"></line><text text-anchor="middle" x="350" y="48">SYN → port 80</text>
+<line marker-end="url(#ar)" stroke="var(--def)" stroke-width="2" x1="106" x2="595" y1="85" y2="85"></line><text fill="var(--def)" text-anchor="middle" x="350" y="78">SYN/ACK</text>
+<text fill="var(--warn)" font-weight="700" text-anchor="end" x="690" y="147">closed</text>
+<line marker-end="url(#ar)" stroke="var(--ink)" stroke-width="2" x1="595" x2="106" y1="140" y2="140"></line><text text-anchor="middle" x="350" y="133">SYN → port 23</text>
+<line marker-end="url(#ar)" stroke="var(--warn)" stroke-width="2" x1="106" x2="595" y1="170" y2="170"></line><text fill="var(--warn)" text-anchor="middle" x="350" y="163">RST/ACK</text>
+<text fill="var(--atk)" font-weight="700" text-anchor="end" x="690" y="232">filtered</text>
+<line marker-end="url(#ar)" stroke="var(--ink)" stroke-width="2" x1="595" x2="260" y1="225" y2="225"></line><text text-anchor="middle" x="430" y="218">SYN → port 445</text>
+<rect fill="var(--atk-soft)" height="60" stroke="var(--atk)" width="20" x="236" y="205"></rect><text fill="var(--atk)" font-size="11" text-anchor="middle" x="246" y="285">Firewall</text>
+<text fill="var(--muted)" text-anchor="middle" x="430" y="255">(no answer, or ICMP unreachable)</text>
+</g>
+</svg>
+<figcaption>How to read it in Wireshark: SYN/ACK = open, RST = closed, silence = filtered by a firewall.</figcaption>
+</figure><h3>Banner grabbing with netcat</h3><pre><code>$ nc 192.168.100.194 80
+HEAD / HTTP/1.1
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/html; charset=us-ascii
+Server: Microsoft-HTTPAPI/2.0      ← OS and version revealed
+Date: Fri, 01 Mar 2013 12:49:07 GMT
+Connection: close</code></pre><div class="col"><p>The lecture's technique: send a malformed request and read the error, which leaks information. This request lacks a Host header, so the server returns 400, and its Server header says what it is. On the wire: a full TCP handshake, one PSH/ACK with the request, one with the response, FIN.</p></div><div class="atk"><span class="tag">Exploit</span><p>Exact version → search Exploit-DB or CVE → ready-made exploit. That is how recon becomes an attack.</p></div><div class="def"><span class="tag">Defense</span><p>Hide or fake banners (ServerTokens Prod in Apache, server_tokens off in nginx), generic error pages, an IDS that detects scans, and closing every port that does not need to be open.</p></div>
+</section>
+<section id="se">
+<h2><span class="n">8</span>Social engineering</h2>
+<div class="col"><p><i>"All warfare is based on deception... Hold out baits to entice the enemy. Feign disorder, and crush him."</i> Sun Tzu, The Art of War</p><p>Social engineering attacks the person instead of the computer, using OSINT to be believable.</p></div><div class="grid"><div class="box"><h4>Pretexting</h4><p>Pretending to be someone you are not, to get something you probably should not have, and use it in a way that is probably wrong. Needs prior research (accounts, emails, IDs).<br>Targets: secretaries, helpdesk, new employees. Building trust: real names, internal jargon, urgency, authority.</p></div><div class="box"><h4>Phishing</h4><p>An email or message impersonating a trusted party that leads to a malicious link or file. <b>Spear phishing</b> = aimed at one person with OSINT detail. <b>Whaling</b> = aimed at executives.</p></div><div class="box"><h4>Exit strategy</h4><p>Every plan needs a way out if it fails, so the attempt is not exposed and the target is not "burned".</p></div></div><div class="why"><span class="tag">Why it works</span><p>Cialdini's principles of influence: authority ("I'm from IT"), urgency ("your account locks in an hour"), liking and trust, reciprocity. People want to help, and that is the weakness.</p></div><div class="real"><span class="tag">Real world</span><p>The 2020 Twitter breach (phone pretexting of employees, takeover of Obama's and Musk's accounts), MGM Resorts 2023 (a helpdesk call to reset MFA, about $100M damage), and business email compromise leading to fraudulent transfers. Testing tools: GoPhish, SET (Social-Engineer Toolkit).</p></div>
+</section>
+<section id="tree">
+<h2><span class="n">9</span>Attack tree: getting the password from the secretary</h2>
+<figure>
+<svg aria-label="Attack tree" role="img" viewBox="0 0 720 470" width="720">
+<g font-size="13">
+<rect fill="var(--accent-soft)" height="34" rx="17" stroke="var(--accent)" width="140" x="290" y="10"></rect><text font-weight="700" text-anchor="middle" x="360" y="32">Start</text>
+<line marker-end="url(#ar)" stroke="var(--muted)" stroke-width="2" x1="360" x2="360" y1="44" y2="64"></line>
+<rect fill="var(--surface)" height="54" rx="8" stroke="var(--line)" width="290" x="215" y="66"></rect>
+<text text-anchor="middle" x="360" y="88">Call the secretary as "Danny from the helpdesk"</text><text text-anchor="middle" x="360" y="108">ask her to change her password, hang up</text>
+<line marker-end="url(#ar)" stroke="var(--muted)" stroke-width="2" x1="360" x2="360" y1="120" y2="140"></line>
+<rect fill="var(--surface)" height="40" rx="8" stroke="var(--line)" width="290" x="215" y="142"></rect><text text-anchor="middle" x="360" y="167">10 minutes later call again: "did you change it?"</text>
+<line marker-end="url(#ar)" stroke="var(--muted)" stroke-width="2" x1="360" x2="360" y1="182" y2="202"></line>
+<polygon fill="var(--warn-soft)" points="360,204 450,240 360,276 270,240" stroke="var(--warn)"></polygon><text text-anchor="middle" x="360" y="245">believes?</text>
+<line marker-end="url(#ar)" stroke="var(--atk)" stroke-width="2" x1="270" x2="150" y1="240" y2="240"></line><text fill="var(--atk)" text-anchor="middle" x="215" y="232">no</text>
+<rect fill="var(--atk-soft)" height="52" rx="8" stroke="var(--atk)" width="138" x="10" y="215"></rect><text font-size="12" text-anchor="middle" x="79" y="237">Exit: "I'll come to</text><text font-size="12" text-anchor="middle" x="79" y="255">your desk" / hang up</text>
+<line marker-end="url(#ar)" stroke="var(--def)" stroke-width="2" x1="360" x2="360" y1="276" y2="300"></line><text fill="var(--def)" text-anchor="end" x="375" y="292">yes</text>
+<polygon fill="var(--warn-soft)" points="360,302 450,338 360,374 270,338" stroke="var(--warn)"></polygon><text text-anchor="middle" x="360" y="343">changed it?</text>
+<line marker-end="url(#ar)" stroke="var(--muted)" stroke-width="2" x1="450" x2="520" y1="338" y2="338"></line><text fill="var(--muted)" text-anchor="middle" x="485" y="330">no</text>
+<text font-size="12" text-anchor="middle" x="620" y="320">back to previous step</text><text font-size="12" text-anchor="middle" x="620" y="338">(ask again)</text>
+<line marker-end="url(#ar)" stroke="var(--def)" stroke-width="2" x1="360" x2="360" y1="374" y2="394"></line><text fill="var(--def)" text-anchor="end" x="375" y="388">yes</text>
+<rect fill="var(--surface)" height="52" rx="8" stroke="var(--line)" width="340" x="190" y="396"></rect><text text-anchor="middle" x="360" y="418">"Tell me the new password, I need to</text><text text-anchor="middle" x="360" y="437">update it in our systems"</text>
+<line marker-end="url(#ar)" stroke="var(--def)" stroke-width="2" x1="530" x2="590" y1="422" y2="422"></line>
+<rect fill="var(--def-soft)" height="40" rx="20" stroke="var(--def)" width="110" x="592" y="402"></rect><text fill="var(--def)" font-weight="700" text-anchor="middle" x="647" y="427">Hacked</text>
+<line marker-end="url(#ar)" stroke="var(--atk)" stroke-dasharray="5 4" stroke-width="1.5" x1="190" x2="150" y1="422" y2="300"></line><text fill="var(--atk)" font-size="12" text-anchor="middle" x="140" y="370">not given → exit</text>
+</g>
+</svg>
+<figcaption>The trick: the first call only sets the stage and builds legitimacy. When the second call comes, the request sounds like a natural follow-up.</figcaption>
+</figure><div class="def"><span class="tag">Defense</span><p>A clear policy: IT never asks for a password. Call back on a known number, phishing drills and training, and phishing-resistant MFA (FIDO2) so a stolen password alone is not enough.</p></div>
+</section>
+<section id="review">
+<h2><span class="n">10</span>Quick review</h2>
+<div class="tbl"><table><thead><tr><th>Question</th><th>Short answer</th></tr></thead><tbody><tr><td>What is OSINT?</td><td>Collecting and analysing publicly available information to produce intelligence.</td></tr><tr><td>Passive / semi-passive / active?</td><td>Undetectable / looks like normal traffic / expected to be detected.</td></tr><tr><td>What do A, MX, NS, SOA return?</td><td>Domain IP, mail servers, authoritative DNS servers, zone authority info.</td></tr><tr><td>Why is a Shodan query passive?</td><td>It goes to Shodan's database, not to the target.</td></tr><tr><td>open / closed / filtered?</td><td>SYN/ACK / RST / no answer (firewall).</td></tr><tr><td>Banner grabbing?</td><td>Connect to a service (e.g. with nc) and read the version from the reply, often by sending a malformed request.</td></tr><tr><td>Pretexting?</td><td>Impersonation with a researched cover story to get information or access.</td></tr><tr><td>Why an exit strategy?</td><td>So a failure does not expose the attack or burn the target.</td></tr></tbody></table></div><p class="src">Source: "02 HIT 2015-07 OSINT.pdf" (50 slides). Videos in the folder: Electronic warfare: Stuxnet, Ralph Langner: Cracking Stuxnet, Port Forwarding Explained. "Real world" items not on the slides are my additions.</p>
+</section>
