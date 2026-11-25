@@ -44,6 +44,7 @@ Every security chapter opens with a "Before you start" box linking to the networ
 - **Diagrams and header bit-layouts** throughout the topic chapters (SVG, light and dark themes).
 - **Worked examples** in exam format for every calculation topic.
 - **153 practice questions** with explanations: a quiz at the end of every topic chapter, and a practice page that builds mixed sets per chapter or per course.
+- **A summary for every chapter** (English and Hebrew): the big idea, the key points with links to each section, and what to remember for the exam. A "Chapter summary" button opens it from each chapter, and the summaries page shows a whole course at once, ready to print as a revision booklet.
 - **Instant search** across both courses and all animations (press `/`).
 - **English / עברית switch** in the top bar. Technical terms, protocol names and header field names stay in English.
 - Responsive layout with light and dark themes.
@@ -65,6 +66,7 @@ anim.js        animation player and the security-course scenarios
 anim-net.js    networks-course scenarios (English + Hebrew narration)
 anim-he.js     Hebrew titles and narration for the security animations
 quiz.js        question bank (English + Hebrew) and quiz engine
+summaries.js   chapter summaries (English + Hebrew)
 ch/*.html      one HTML fragment per chapter (English)
 ch/he/*.html   the same chapters in Hebrew
 ```

@@ -218,6 +218,43 @@ td.num{font-variant-numeric:tabular-nums}
 @media (max-width:520px){.ask-btn .lbl{display:none}.lang-btn{padding:.45rem .55rem}}
 @media (max-width:900px){:root[dir="rtl"] .rail{left:auto;right:0;box-shadow:-12px 0 40px rgba(0,0,0,.18)}}
 
+/* chapter summaries */
+.sum-btn{display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:.35rem .9rem;font-weight:600;font-size:.9rem;text-decoration:none}
+.sum-btn:hover{background:var(--accent);color:var(--surface)}
+.sum-end{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:2rem 0 1rem;padding:1rem 1.2rem;border:1px solid var(--line);border-inline-start:4px solid var(--accent);border-radius:10px;background:var(--surface)}
+.sum-end p{margin:0;flex:1 1 240px}
+.sum-end .sum-btn{margin:0}
+.sum-acts{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.sum-acts a,.sum-acts button{font:inherit;font-size:.88rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.3rem .8rem;text-decoration:none;cursor:pointer}
+.sum-acts a:hover,.sum-acts button:hover{border-color:var(--accent);color:var(--accent)}
+.sum-acts .pri{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.sum-acts .pri:hover{color:var(--surface);opacity:.9}
+.sum-big{font-size:1.06rem;line-height:1.7;max-width:76ch}
+.sum-h{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:1.6rem 0 .6rem}
+ol.sum-pts{list-style:none;padding:0;margin:0;counter-reset:sp;max-width:80ch}
+ol.sum-pts li{counter-increment:sp;position:relative;padding:.6rem 0 .6rem 2.4rem;border-bottom:1px solid var(--line);margin:0;line-height:1.6}
+:root[dir="rtl"] ol.sum-pts li{padding:.6rem 2.4rem .6rem 0}
+ol.sum-pts li::before{content:counter(sp);position:absolute;inset-inline-start:0;top:.62rem;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-family:var(--f-mono);font-size:.78rem;font-weight:600;display:grid;place-items:center}
+.sum-go{display:inline-block;font-size:.78rem;font-family:var(--f-mono);text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 .5rem;margin-inline-start:.4rem;white-space:nowrap}
+.sum-go:hover{color:var(--accent);border-color:var(--accent)}
+.sum-keys ul{margin:.3rem 0 0;padding-inline-start:1.2rem}
+.sum-keys li{margin:.3rem 0;font-variant-numeric:tabular-nums}
+.sum-pn{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:2rem 0 1rem}
+.sum-pn a{display:block;border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;text-decoration:none;color:var(--ink);background:var(--surface);min-width:0}
+.sum-pn a:hover{border-color:var(--accent)}
+.sum-pn small{display:block;font-family:var(--f-mono);font-size:.72rem;color:var(--accent)}
+.sum-pn .nx{text-align:end;grid-column:2}
+.sum-ch{padding-block:1.6rem;border-bottom:1px solid var(--line)}
+.sum-ch h2{font-size:1.3rem}
+.sum-ch h2 a{color:inherit;text-decoration:none}
+.sum-ch h2 a:hover{color:var(--accent)}
+.sum-tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem}
+.sum-tabs a{font-size:.88rem;border:1px solid var(--line);border-radius:999px;padding:.25rem .8rem;text-decoration:none;color:var(--ink);background:var(--surface)}
+.sum-tabs a.on{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.sum-course{font-family:var(--f-mono);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2rem 0 0}
+@media (max-width:560px){.sum-pn{grid-template-columns:1fr}.sum-pn .nx{grid-column:1}}
+@media print{.bar,.rail,.ask,.sum-acts,.sum-pn,.sum-tabs,.sum-go{display:none!important}.frame{display:block}main{padding:0}.sum-ch{break-inside:avoid-page}body{background:#fff}}
+
 .intro{display:grid;gap:1.4rem;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start;padding-block:2.4rem 1rem}
 .intro h1{margin:.2rem 0 .8rem}
 .intro .he{font-family:var(--f-body);font-weight:600;direction:rtl;unicode-bidi:isolate}
@@ -316,6 +353,7 @@ td.num{font-variant-numeric:tabular-nums}
 <script src="anim.js"></script>
 <script src="anim-net.js"></script>
 <script src="quiz.js"></script>
+<script src="summaries.js"></script>
 <script>
 (function(){
 'use strict';
@@ -379,14 +417,14 @@ const L = HE ? {
   vEyebrow:'כל האנימציות', vH1:'אנימציות של packets', vLead:'כל התרחישים מכל הפרקים. בחרו אחד למטה.', thCh:'פרק', thAn:'אנימציה',
   noMatch:'אין תוצאות. נסו מילה אחרת.', indexing:'עדיין מאנדקס את הפרקים…', resAnim:'▶ אנימציה · פרק ', resCh:'פרק ',
   search:'חיפוש נושאים, headers, כלים… (לחצו /)', searchLabel:'חיפוש בקורס', lang:'English', langLabel:'Switch to English', chapters:'פרקים',
-  chapterCard:'פרק ', subject:'נושא ', practice:'תרגול ומבחנים', course:'קורס', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה'
+  chapterCard:'פרק ', subject:'נושא ', practice:'תרגול ומבחנים', sums:'סיכומי פרקים', sumBtn:'סיכום הפרק', sumEye:'סיכום · פרק ', sumBig:'הרעיון המרכזי', sumPts:'הנקודות החשובות', sumKeys:'חובה לזכור למבחן', sumFull:'לפרק המלא', sumQuiz:'לבוחן של הפרק', sumPrint:'הדפסה / PDF', sumPrev:'הסיכום הקודם', sumNext:'הסיכום הבא', sumEnd:'סיימתם את הפרק? כל הפרק בשתי דקות קריאה: הרעיון המרכזי, הנקודות החשובות ומה חובה לזכור.', sumAllEye:'סיכומי פרקים', sumAllH:'כל הסיכומים', sumAllLead:'סיכום קצר לכל פרק בשני הקורסים: הרעיון המרכזי, הנקודות החשובות עם קישור לסעיף בפרק, ומה חובה לזכור למבחן. אפשר להדפיס קורס שלם כחוברת חזרה.', sumAll:'כל הקורסים', sumOpen:'לסיכום המלא', course:'קורס', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה'
 } : {
   intro:'Introduction', allAnim:'All animations', loading:'Loading…', loadingCh:'Loading chapter ', loadErr:'Could not load this chapter (', loadErr2:'). Refresh the page to try again.',
   animH:'▶ Animations', animP:'Press Play to watch, or step through with ⏮ ⏭. The right panel shows the real header fields at each step.',
   vEyebrow:'All animations', vH1:'Packet animations', vLead:'Every scenario from every chapter. Pick one below.', thCh:'Chapter', thAn:'Animation',
   noMatch:'No matches. Try another term.', indexing:'Still indexing chapters…', resAnim:'▶ ANIMATION · CH ', resCh:'CH ',
   search:'Search topics, headers, tools… (press /)', searchLabel:'Search the course', lang:'עברית', langLabel:'החלפה לעברית', chapters:'Chapters',
-  chapterCard:'CHAPTER ', subject:'SUBJECT ', practice:'Practice quiz', course:'Course', anim1:'1 animation', animN:' animations', reading:'reading'
+  chapterCard:'CHAPTER ', subject:'SUBJECT ', practice:'Practice quiz', sums:'Chapter summaries', sumBtn:'Chapter summary', sumEye:'Summary · Chapter ', sumBig:'The big idea', sumPts:'Key points', sumKeys:'Must remember for the exam', sumFull:'Read the full chapter', sumQuiz:'Chapter quiz', sumPrint:'Print / PDF', sumPrev:'Previous summary', sumNext:'Next summary', sumEnd:'Finished the chapter? The whole chapter in a two-minute read: the big idea, the key points and what to remember.', sumAllEye:'Chapter summaries', sumAllH:'All summaries', sumAllLead:'A short summary of every chapter in both courses: the big idea, the key points with a link to the section, and what to remember for the exam. Print a whole course as a revision booklet.', sumAll:'All courses', sumOpen:'Open the full summary', course:'Course', anim1:'1 animation', animN:' animations', reading:'reading'
 };
 const lab = id => id.toUpperCase();
 const courseOf = id => COURSES.find(k => k.subj.some(g => g.ch.includes(id)));
@@ -399,7 +437,7 @@ const cache = {};
 let player = null;
 
 // ---------- rail ----------
-rail.innerHTML = '<a href="#home" data-ch="home"><span>⌂</span>' + L.intro + '</a>' + COURSES.map(k => '<div class="crs">' + esc(HE ? k.ht : k.t) + '</div>' + k.subj.map(g => '<div class="grp">' + esc(gT(g)) + '</div>' + g.ch.map(id => { const c = getCh(id); return '<a href="#ch-' + c.id + '" data-ch="' + c.id + '"><span>' + lab(c.id) + '</span>' + esc(cT(c)) + '</a>'; }).join('')).join('')).join('') + '<hr><a href="#quiz" data-ch="quiz"><span>✓</span>' + L.practice + '</a><a href="#videos" data-ch="videos"><span>▶</span>' + L.allAnim + '</a>';
+rail.innerHTML = '<a href="#home" data-ch="home"><span>⌂</span>' + L.intro + '</a>' + COURSES.map(k => '<div class="crs">' + esc(HE ? k.ht : k.t) + '</div>' + k.subj.map(g => '<div class="grp">' + esc(gT(g)) + '</div>' + g.ch.map(id => { const c = getCh(id); return '<a href="#ch-' + c.id + '" data-ch="' + c.id + '"><span>' + lab(c.id) + '</span>' + esc(cT(c)) + '</a>'; }).join('')).join('')).join('') + '<hr><a href="#sum" data-ch="sum"><span>≡</span>' + L.sums + '</a><a href="#quiz" data-ch="quiz"><span>✓</span>' + L.practice + '</a><a href="#videos" data-ch="videos"><span>▶</span>' + L.allAnim + '</a>';
 rail.setAttribute('aria-label', L.chapters);
 const qInput = $('#q'); qInput.placeholder = L.search; qInput.setAttribute('aria-label', L.searchLabel);
 const langBtn = $('#langBtn'); langBtn.textContent = L.lang; langBtn.setAttribute('aria-label', L.langLabel); langBtn.lang = HE ? 'en' : 'he';
@@ -470,6 +508,7 @@ async function chapter(id, sec){
   if (list.length) { const top = $('.prereq', w) || $('header.top', w); const strip = vidStrip(list); top ? top.after(strip) : w.prepend(strip); }
   if (window.Quiz && !w.querySelector('.quiz-mount') && Quiz.count(id)) { const qm = document.createElement('div'); qm.className = 'quiz-mount'; qm.dataset.quiz = id; const ls = w.querySelectorAll('section'); (ls.length ? ls[ls.length - 1] : w).appendChild(qm); }
   if (window.Quiz) w.querySelectorAll('.quiz-mount').forEach(m => Quiz.mount(m, m.dataset.quiz));
+  sumHooks(w, id);
   w.querySelectorAll('script').forEach(old => { const s = document.createElement('script'); s.textContent = old.textContent; old.replaceWith(s); });
   if (sec) { const t = w.querySelector('#' + CSS.escape(sec)); if (t) { t.scrollIntoView(); return; } }
   window.scrollTo(0, 0);
@@ -492,12 +531,77 @@ function quizPage(sel){
   if (window.Quiz) Quiz.page(w, sel, COURSES, getCh, lab, cT); else w.innerHTML = '<p class="loading">' + L.loading + '</p>';
   window.scrollTo(0, 0);
 }
+// ---------- chapter summaries ----------
+const SUMS = window.SUMMARY || {};
+const SUM_ORDER = CH.map(c => c.id).filter(id => SUMS[id]);
+const sumOf = id => SUMS[id] && SUMS[id][HE ? 'he' : 'en'];
+function sumHooks(w, id){
+  if (!sumOf(id)) return;
+  const head = $('header.top', w);
+  if (head) { const b = document.createElement('a'); b.className = 'sum-btn'; b.href = '#sum-' + id; b.textContent = '≡ ' + L.sumBtn; head.appendChild(b); }
+  const end = document.createElement('div'); end.className = 'sum-end';
+  end.innerHTML = '<p>' + esc(L.sumEnd) + '</p><a class="sum-btn" href="#sum-' + id + '">≡ ' + esc(L.sumBtn) + '</a>';
+  w.appendChild(end);
+}
+function tocOf(html){
+  const m = {}, nav = html.split('</nav>')[0];
+  nav.replace(/<a href="#([\w-]+)">([^<]*)<\/a>/g, (_, k, t) => { m[k] = t; return ''; });
+  return m;
+}
+function sumBody(id, toc, full){
+  const s = sumOf(id), c = getCh(id);
+  const pts = s.pts.map(([t, sec]) => '<li>' + t + (toc[sec] ? '<a class="sum-go" href="#ch-' + id + '--' + sec + '">→ ' + toc[sec] + '</a>' : '') + '</li>').join('');
+  return '<div class="why"><span class="tag">' + L.sumBig + '</span><p class="sum-big">' + esc(s.big) + '</p></div>'
+   + '<h2 class="sum-h">' + L.sumPts + '</h2><ol class="sum-pts">' + pts + '</ol>'
+   + '<div class="def sum-keys"><span class="tag">' + L.sumKeys + '</span><ul>' + s.keys.map(k => '<li>' + k + '</li>').join('') + '</ul></div>';
+}
+async function summary(id){
+  stopPlayer(); setOn('sum');
+  const c = getCh(id); if (!c || !sumOf(id)) { location.hash = '#sum'; return; }
+  let toc = {}; try { toc = tocOf(await load(id)); } catch (e) {}
+  const i = SUM_ORDER.indexOf(id), pv = SUM_ORDER[i - 1], nx = SUM_ORDER[i + 1];
+  const pn = (k, cls, lbl) => k ? '<a class="' + cls + '" href="#sum-' + k + '"><small>' + lbl + ' · ' + lab(k) + '</small>' + esc(cT(getCh(k))) + '</a>' : '';
+  const w = document.createElement('div'); w.className = 'wrap';
+  w.innerHTML = '<header class="top"><div class="eyebrow">' + L.sumEye + lab(id) + ' · ' + esc(cT(courseOf(id))) + '</div><h1>' + esc(cT(c)) + '</h1>'
+   + '<div class="sum-acts"><a class="pri" href="#ch-' + id + '">' + L.sumFull + '</a>' + (window.Quiz && Quiz.count(id) ? '<a href="#ch-' + id + '--review">' + L.sumQuiz + '</a>' : '') + '<a href="#sum">' + L.sums + '</a><button type="button" class="sum-print">' + L.sumPrint + '</button></div></header>'
+   + sumBody(id, toc)
+   + '<nav class="sum-pn">' + pn(pv, 'pv', '← ' + L.sumPrev).replace('← ', HE ? '→ ' : '← ') + pn(nx, 'nx', L.sumNext + (HE ? ' ←' : ' →')) + '</nav>';
+  main.innerHTML = ''; main.appendChild(w);
+  $('.sum-print', w).onclick = () => window.print();
+  window.scrollTo(0, 0);
+}
+async function summaries(course){
+  stopPlayer(); setOn('sum');
+  const ks = COURSES.filter(k => k.subj.some(g => g.ch.some(id => SUMS[id])));
+  const pick = ks.find(k => k.key === course);
+  const w = document.createElement('div'); w.className = 'wrap';
+  w.innerHTML = '<header class="top"><div class="eyebrow">' + L.sumAllEye + '</div><h1>' + L.sumAllH + '</h1><p class="lead">' + L.sumAllLead + '</p>'
+   + '<div class="sum-tabs"><a href="#sum"' + (pick ? '' : ' class="on"') + '>' + L.sumAll + '</a>' + ks.map(k => '<a href="#sum-' + k.key + '"' + (pick === k ? ' class="on"' : '') + '>' + esc(cT(k)) + '</a>').join('') + '</div>'
+   + '<div class="sum-acts"><button type="button" class="sum-print">' + L.sumPrint + '</button></div></header><div class="loading">' + L.loading + '</div>';
+  main.innerHTML = ''; main.appendChild(w);
+  $('.sum-print', w).onclick = () => window.print();
+  const show = pick ? [pick] : ks;
+  const ids = show.flatMap(k => k.subj.flatMap(g => g.ch)).filter(id => SUMS[id]);
+  const tocs = {}; await Promise.all(ids.map(async id => { try { tocs[id] = tocOf(await load(id)); } catch (e) { tocs[id] = {}; } }));
+  if (!location.hash.startsWith('#sum')) return;
+  $('.loading', w).remove();
+  show.forEach(k => {
+    const h = document.createElement('div'); h.className = 'sum-course'; h.textContent = cT(k); w.appendChild(h);
+    k.subj.flatMap(g => g.ch).filter(id => SUMS[id]).forEach(id => {
+      const sec = document.createElement('section'); sec.className = 'sum-ch'; sec.id = 'sum-ch-' + id;
+      sec.innerHTML = '<h2><span class="n">' + lab(id) + '</span><a href="#sum-' + id + '">' + esc(cT(getCh(id))) + '</a></h2>' + sumBody(id, tocs[id]);
+      w.appendChild(sec);
+    });
+  });
+}
 function route(){
   const h = location.hash.slice(1);
   if (!h || h === 'home') return home();
   if (h === 'videos') return videos();
   if (h === 'quiz' || h.startsWith('quiz-')) return quizPage(h.slice(5));
   if (h.startsWith('v-')) return videos(h.slice(2));
+  if (h === 'sum') return summaries();
+  if (h.startsWith('sum-')) { const k = h.slice(4); return COURSES.some(c => c.key === k) ? summaries(k) : summary(k); }
   const m = h.match(/^ch-([nt]?\d\d)(?:--(.+))?$/);
   if (m) return chapter(m[1], m[2]);
   home();
@@ -507,7 +611,7 @@ window.addEventListener('hashchange', route);
 main.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]'); if (!a) return;
   const h = a.getAttribute('href').slice(1);
-  if (/^(ch-|v-|quiz|home$|videos$)/.test(h)) return;
+  if (/^(ch-|v-|quiz|sum|home$|videos$)/.test(h)) return;
   const t = main.querySelector('#' + CSS.escape(h)); if (t) { e.preventDefault(); t.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); }
 });
 route();
