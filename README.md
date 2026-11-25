@@ -4,7 +4,7 @@ A study companion for the HIT course **אבטחת רשתות ומשרתת** (Net
 
 It explains each topic in the course down to the packet level: where each packet goes, which headers it carries and why, and the exact steps of every protocol, attack and defense.
 
-**Live site:** https://edenalon23.github.io/Networks-and-internet-security-HIT/
+**Live site:** https://edenalon23.github.io/REPO_NAME/
 
 ## What's inside
 
@@ -20,6 +20,7 @@ It explains each topic in the course down to the packet level: where each packet
 - **Instant search** across all chapters and animations (press `/`).
 - **Interactive widgets**, such as a Caesar cipher and a small RSA calculator.
 - **Exam-review tables** at the end of every chapter.
+- **English / עברית switch** in the top bar. The Hebrew version translates every explanation and all animation narration. Technical terms, protocol names and header field names stay in English.
 - Responsive layout with light and dark themes.
 
 ## Run locally
@@ -36,7 +37,9 @@ python3 -m http.server 8000
 ```
 index.html     shell: navigation, intro page, search, chapter router
 anim.js        animation scenarios and the SVG player
-ch/*.html      one HTML fragment per chapter
+anim-he.js     Hebrew titles and narration for the animations
+ch/*.html      one HTML fragment per chapter (English)
+ch/he/*.html   the same chapters in Hebrew
 ```
 
 ## Disclaimer

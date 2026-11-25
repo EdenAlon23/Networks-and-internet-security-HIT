@@ -413,14 +413,23 @@
   const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
 
+  const UI = { en: { anim: 'Animation', restart: 'Restart', prev: 'Previous step', next: 'Next step', play: 'Play', pause: 'Pause', replay: 'Replay', speed: 'Speed', none: 'No new header in this step.', step: 'Step' },
+    he: { anim: 'אנימציה', restart: 'מההתחלה', prev: 'הצעד הקודם', next: 'הצעד הבא', play: 'נגן', pause: 'השהה', replay: 'נגן שוב', speed: 'מהירות', none: 'אין header חדש בצעד הזה.', step: 'צעד' } };
+  const isHe = () => window.LANG === 'he' && window.ANIM_HE;
+  const T = (k) => (isHe() ? UI.he : UI.en)[k];
+  function loc(sc) {
+    if (!sc || !isHe() || !window.ANIM_HE[sc.id]) return sc;
+    const h = window.ANIM_HE[sc.id];
+    return Object.assign({}, sc, { title: h.t, steps: sc.steps.map((st, i) => Object.assign({}, st, { say: h.s[i] || st.say })) });
+  }
   function nodeH(n) { return n.hh || (30 + (n.s ? n.s.split('\n').length * 15 : 0)); }
 
   function Player(root, sc) {
     this.sc = sc; this.i = -1; this.playing = false; this.speed = 1; this.timers = []; this.raf = 0;
     root.innerHTML = '';
-    root.classList.add('ap');
+    root.classList.add('ap'); root.setAttribute('dir', 'ltr');
     const head = document.createElement('div'); head.className = 'ap-head';
-    head.innerHTML = '<span class="ap-kicker">Animation</span><span class="ap-title"></span>';
+    head.innerHTML = '<span class="ap-kicker">' + T('anim') + '</span><span class="ap-title"></span>';
     head.querySelector('.ap-title').textContent = sc.title;
     const body = document.createElement('div'); body.className = 'ap-body';
     const stage = document.createElement('div'); stage.className = 'ap-stage';
@@ -428,9 +437,9 @@
     stage.appendChild(svg);
     const hdr = document.createElement('div'); hdr.className = 'ap-hdr';
     body.append(stage, hdr);
-    const say = document.createElement('div'); say.className = 'ap-say'; say.setAttribute('aria-live', 'polite');
+    const say = document.createElement('div'); say.className = 'ap-say'; say.setAttribute('aria-live', 'polite'); if (isHe()) { say.setAttribute('dir', 'rtl'); say.setAttribute('lang', 'he'); head.setAttribute('dir', 'rtl'); }
     const ctr = document.createElement('div'); ctr.className = 'ap-ctr';
-    ctr.innerHTML = '<button type="button" data-a="restart" aria-label="Restart">↺</button><button type="button" data-a="prev" aria-label="Previous step">⏮</button><button type="button" data-a="play" class="ap-play" aria-label="Play">▶ Play</button><button type="button" data-a="next" aria-label="Next step">⏭</button><div class="ap-dots"></div><label class="ap-spd">Speed <select><option value="0.6">0.6×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>';
+    ctr.innerHTML = '<button type="button" data-a="restart" aria-label="' + T('restart') + '">↺</button><button type="button" data-a="prev" aria-label="' + T('prev') + '">⏮</button><button type="button" data-a="play" class="ap-play" aria-label="' + T('play') + '">▶ ' + T('play') + '</button><button type="button" data-a="next" aria-label="' + T('next') + '">⏭</button><div class="ap-dots"></div><label class="ap-spd">' + T('speed') + ' <select><option value="0.6">0.6×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>';
     root.append(head, body, say, ctr);
     this.svg = svg; this.hdr = hdr; this.sayEl = say; this.ctr = ctr; this.root = root;
     const dots = ctr.querySelector('.ap-dots');
@@ -493,7 +502,7 @@
   };
   Player.prototype.renderHdr = function (step) {
     const hdr = this.hdr; hdr.innerHTML = '';
-    if (!step.h || !step.h.length) { hdr.innerHTML = '<p class="ap-empty">No new header in this step.</p>'; return; }
+    if (!step.h || !step.h.length) { hdr.innerHTML = '<p class="ap-empty">' + T('none') + '</p>'; return; }
     step.h.forEach(hh => {
       const box = document.createElement('div'); box.className = 'ap-hbox';
       const t = document.createElement('div'); t.className = 'ap-ht'; t.textContent = hh.t; box.appendChild(t);
@@ -506,7 +515,7 @@
     this.clear(); this.i = i;
     const sc = this.sc, step = sc.steps[i], st = this.stateAt(i);
     Object.keys(st).forEach(id => this.setSub(id, st[id]));
-    this.sayEl.innerHTML = '<span class="ap-n">Step ' + (i + 1) + ' / ' + sc.steps.length + '</span> ' + step.say;
+    this.sayEl.innerHTML = '<span class="ap-n">' + T('step') + ' ' + (i + 1) + ' / ' + sc.steps.length + '</span> ' + step.say;
     this.renderHdr(step);
     this.ctr.querySelectorAll('.ap-dot').forEach((d, k) => { d.classList.toggle('on', k === i); d.classList.toggle('done', k < i); });
     const finish = () => {
@@ -563,11 +572,11 @@
   };
   Player.prototype.play = function () {
     if (this.i >= this.sc.steps.length - 1) this.i = -1;
-    this.playing = true; this.btn('⏸ Pause', 'Pause');
+    this.playing = true; this.btn('⏸ ' + T('pause'), T('pause'));
     this.go(this.i + 1);
   };
   Player.prototype.pause = function (ended) {
-    this.playing = false; this.btn(ended ? '↺ Replay' : '▶ Play', ended ? 'Replay' : 'Play');
+    this.playing = false; this.btn(ended ? '↺ ' + T('replay') : '▶ ' + T('play'), ended ? T('replay') : T('play'));
     this.timers.forEach(clearTimeout); this.timers = [];
   };
   Player.prototype.btn = function (txt, label) { const b = this.ctr.querySelector('.ap-play'); b.textContent = txt; b.setAttribute('aria-label', label); };
@@ -576,7 +585,8 @@
   window.Anim = {
     scenarios: S,
     byChapter: (ch) => S.filter(s => s.ch === ch),
-    get: (id) => S.find(s => s.id === id),
-    mount: (root, id) => new Player(root, typeof id === 'string' ? S.find(s => s.id === id) : id),
+    get: (id) => loc(S.find(s => s.id === id)),
+    loc: loc,
+    mount: (root, id) => new Player(root, loc(typeof id === 'string' ? S.find(s => s.id === id) : id)),
   };
 })();

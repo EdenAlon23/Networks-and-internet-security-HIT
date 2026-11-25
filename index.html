@@ -9,8 +9,9 @@
 <meta property="og:title" content="NetSec Study Hub · HIT">
 <meta property="og:description" content="Network and server security, explained down to every packet and header. A study companion by Eden Alon.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 4 7v8c0 8 5 13 12 15 7-2 12-7 12-15V7z' fill='%230f7c8c'/%3E%3C/svg%3E">
+<script>(function(){var l='en';try{l=localStorage.getItem('netsec-lang')||'en'}catch(e){}if(l!=='he')l='en';window.LANG=l;var d=document.documentElement;d.lang=l;d.dir=l==='he'?'rtl':'ltr';})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: sticky top bar (brand · search · ask) + chapter rail + reading column; chapters load as fragments; ask panel slides in from the right */
 :root{
@@ -214,7 +215,8 @@ td.num{font-variant-numeric:tabular-nums}
   .brand span{display:none}
   .ask-btn{padding:.5rem .7rem}
 }
-@media (max-width:520px){.ask-btn .lbl{display:none}}
+@media (max-width:520px){.ask-btn .lbl{display:none}.lang-btn{padding:.45rem .55rem}}
+@media (max-width:900px){:root[dir="rtl"] .rail{left:auto;right:0;box-shadow:-12px 0 40px rgba(0,0,0,.18)}}
 
 .intro{display:grid;gap:1.4rem;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start;padding-block:2.4rem 1rem}
 .intro h1{margin:.2rem 0 .8rem}
@@ -231,6 +233,15 @@ td.num{font-variant-numeric:tabular-nums}
 .subj-h h2{margin:0;font-size:1.25rem}
 .subj-h p{margin:0 0 0 auto;color:var(--muted);font-size:.9rem}
 .subj .cards{margin:.8rem 0 0}
+.lang-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:.45rem .75rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--f-body)}
+.lang-btn:hover{border-color:var(--accent)}
+:root[lang="he"]{--f-body:"Heebo","IBM Plex Sans","Segoe UI",Arial,sans-serif;--f-display:"Heebo","Space Grotesk","Segoe UI",Arial,sans-serif}
+:root[dir="rtl"] .rail{border-right:0;border-left:1px solid var(--line)}
+:root[dir="rtl"] pre,:root[dir="rtl"] .bitwrap,:root[dir="rtl"] .ap{direction:ltr}
+:root[lang="he"] .eyebrow,:root[lang="he"] .num,:root[lang="he"] .grp,:root[lang="he"] .stats span,:root[lang="he"] .ap-kicker,:root[lang="he"] .ap-n{font-family:var(--f-body);letter-spacing:0}
+:root[dir="rtl"] pre{text-align:left}
+:root[dir="rtl"] td,:root[dir="rtl"] th{text-align:right}
+:root[dir="rtl"] .search input{text-align:right}
 .disclaimer{margin:2.4rem 0 2rem;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1rem}
 .rail .grp{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:.9rem .5rem .2rem}
 @media (max-width:820px){.intro{grid-template-columns:1fr}.subj-h{flex-wrap:wrap}.subj-h p{margin:0;flex-basis:100%}}
@@ -248,6 +259,7 @@ td.num{font-variant-numeric:tabular-nums}
     <input id="q" type="search" placeholder="Search topics, headers, tools… (press /)" autocomplete="off" aria-label="Search the course">
     <div class="results" id="results" hidden></div>
   </div>
+  <button class="lang-btn" id="langBtn" type="button"></button>
   <button class="ask-btn" id="askBtn" type="button">✦ <span class="lbl">Ask a question</span></button>
 </div></div>
 
@@ -263,37 +275,61 @@ td.num{font-variant-numeric:tabular-nums}
   <form class="ask-f" id="askForm"><textarea id="askIn" rows="1" placeholder="e.g. Why does the fragment offset count in 8-byte units?"></textarea><button type="submit" id="askSend">Ask</button></form>
 </aside>
 
+<script src="anim-he.js"></script>
 <script src="anim.js"></script>
 <script>
 (function(){
 'use strict';
 const CH = [
-  {id:'00',file:'00-packets.html',t:'Packet foundations',d:'Ethernet, ARP, IPv4, fragmentation, ICMP, TCP, UDP, DNS: every header field and why it exists.'},
-  {id:'01',file:'01-intro.html',t:'Intro to cyber security',d:'CIA, threats vs vulnerabilities, attack phases, defense in depth.'},
-  {id:'02',file:'02-osint.html',t:'OSINT and reconnaissance',d:'Footprinting, whois, DNS, Google dorks, Shodan, social engineering.'},
-  {id:'03',file:'03-scanning.html',t:'Scanning',d:'Host discovery, every nmap scan type at packet level, OS fingerprinting, banners.'},
-  {id:'04',file:'04-sniffing.html',t:'Sniffing and poisoning',d:'Hubs vs switches, MAC flooding, ARP, DHCP and DNS poisoning.'},
-  {id:'05',file:'05-dos.html',t:'DoS and DDoS',d:'SYN flood, Smurf, amplification, fragment attacks, botnets, mitigation.'},
-  {id:'06',file:'06-symmetric.html',t:'Symmetric cryptography',d:'Classical ciphers, DES/3DES/AES, block modes, key distribution.'},
-  {id:'07',file:'07-public-key.html',t:'Public-key cryptography',d:'Diffie-Hellman, RSA, signatures, hashes, certificates and PKI.'},
-  {id:'08',file:'08-email.html',t:'Email security',d:'SMTP path, PGP step by step, S/MIME, SPF, DKIM, DMARC.'},
-  {id:'09',file:'09-firewalls.html',t:'Firewalls and access control',d:'Stateless vs stateful, proxies, DMZ designs, NAT, iptables, ACL and RBAC.'},
-  {id:'10',file:'10-tools.html',t:'Tools lab',d:'What each tool does, what it puts on the wire, how to read its output, how they combine.'}
+  {id:'00',file:'00-packets.html',t:'Packet foundations',d:'Ethernet, ARP, IPv4, fragmentation, ICMP, TCP, UDP, DNS: every header field and why it exists.',ht:'יסודות ה-packet',hd:'Ethernet, ARP, IPv4, פיצול, ICMP, TCP, UDP, DNS: כל שדה header ולמה הוא קיים.'},
+  {id:'01',file:'01-intro.html',t:'Intro to cyber security',d:'CIA, threats vs vulnerabilities, attack phases, defense in depth.',ht:'מבוא לאבטחת סייבר',hd:'CIA, איומים מול פגיעויות, שלבי תקיפה, הגנה לעומק.'},
+  {id:'02',file:'02-osint.html',t:'OSINT and reconnaissance',d:'Footprinting, whois, DNS, Google dorks, Shodan, social engineering.',ht:'OSINT וסיור',hd:'Footprinting, whois, DNS, Google dorks, Shodan, הנדסה חברתית.'},
+  {id:'03',file:'03-scanning.html',t:'Scanning',d:'Host discovery, every nmap scan type at packet level, OS fingerprinting, banners.',ht:'סריקות',hd:'גילוי מחשבים, כל סוג סריקת nmap ברמת ה-packet, זיהוי מערכת הפעלה, banners.'},
+  {id:'04',file:'04-sniffing.html',t:'Sniffing and poisoning',d:'Hubs vs switches, MAC flooding, ARP, DHCP and DNS poisoning.',ht:'האזנה והרעלה',hd:'Hub מול switch, MAC flooding, הרעלת ARP, DHCP ו-DNS.'},
+  {id:'05',file:'05-dos.html',t:'DoS and DDoS',d:'SYN flood, Smurf, amplification, fragment attacks, botnets, mitigation.',ht:'DoS ו-DDoS',hd:'SYN flood, Smurf, amplification, תקיפות fragments, botnets, הגנות.'},
+  {id:'06',file:'06-symmetric.html',t:'Symmetric cryptography',d:'Classical ciphers, DES/3DES/AES, block modes, key distribution.',ht:'הצפנה סימטרית',hd:'צפנים קלאסיים, DES/3DES/AES, מצבי בלוק, הפצת מפתחות.'},
+  {id:'07',file:'07-public-key.html',t:'Public-key cryptography',d:'Diffie-Hellman, RSA, signatures, hashes, certificates and PKI.',ht:'הצפנה במפתח ציבורי',hd:'Diffie-Hellman, RSA, חתימות, hash, תעודות ו-PKI.'},
+  {id:'08',file:'08-email.html',t:'Email security',d:'SMTP path, PGP step by step, S/MIME, SPF, DKIM, DMARC.',ht:'אבטחת דואר אלקטרוני',hd:'מסלול SMTP, PGP צעד אחרי צעד, S/MIME, SPF, DKIM, DMARC.'},
+  {id:'09',file:'09-firewalls.html',t:'Firewalls and access control',d:'Stateless vs stateful, proxies, DMZ designs, NAT, iptables, ACL and RBAC.',ht:'Firewalls ובקרת גישה',hd:'Stateless מול stateful, proxies, תכנון DMZ, NAT, iptables, ACL ו-RBAC.'},
+  {id:'10',file:'10-tools.html',t:'Tools lab',d:'What each tool does, what it puts on the wire, how to read its output, how they combine.',ht:'מעבדת כלים',hd:'מה כל כלי עושה, מה הוא שולח על הקו, איך קוראים את הפלט, ואיך הם מתחברים.'}
 ];
 const SUBJ = [
-  {t:'Foundations',d:'How packets travel and what security means',ch:['00','01']},
-  {t:'Reconnaissance',d:'Finding out what exists before touching it',ch:['02','03']},
-  {t:'Attacks on the network',d:'Abusing LAN protocols and exhausting resources',ch:['04','05']},
-  {t:'Cryptography',d:'Secret keys, public keys, and securing email',ch:['06','07','08']},
-  {t:'Defense and practice',d:'Firewalls, access control and the tools lab',ch:['09','10']}
+  {t:'Foundations',d:'How packets travel and what security means',ht:'יסודות',hd:'איך packets עוברים ומה זו אבטחה',ch:['00','01']},
+  {t:'Reconnaissance',d:'Finding out what exists before touching it',ht:'סיור',hd:'לגלות מה קיים לפני שנוגעים',ch:['02','03']},
+  {t:'Attacks on the network',d:'Abusing LAN protocols and exhausting resources',ht:'תקיפות על הרשת',hd:'ניצול פרוטוקולי LAN ומיצוי משאבים',ch:['04','05']},
+  {t:'Cryptography',d:'Secret keys, public keys, and securing email',ht:'קריפטוגרפיה',hd:'מפתח סודי, מפתח ציבורי ואבטחת מייל',ch:['06','07','08']},
+  {t:'Defense and practice',d:'Firewalls, access control and the tools lab',ht:'הגנה ותרגול',hd:'Firewalls, בקרת גישה ומעבדת הכלים',ch:['09','10']}
 ];
+const HE = window.LANG === 'he';
+const L = HE ? {
+  intro:'מבוא', allAnim:'כל האנימציות', loading:'טוען…', loadingCh:'טוען את פרק ', loadErr:'לא ניתן לטעון את הפרק (', loadErr2:'). רעננו את הדף כדי לנסות שוב.',
+  animH:'▶ אנימציות', animP:'לחצו נגן כדי לצפות, או עברו צעד אחרי צעד עם ⏮ ⏭. בחלון הצדדי רואים את שדות ה-header האמיתיים בכל צעד.',
+  vEyebrow:'כל האנימציות', vH1:'אנימציות של packets', vLead:'כל התרחישים מכל הפרקים. בחרו אחד למטה.', thCh:'פרק', thAn:'אנימציה',
+  noMatch:'אין תוצאות. נסו מילה אחרת.', indexing:'עדיין מאנדקס את הפרקים…', resAnim:'▶ אנימציה · פרק ', resCh:'פרק ',
+  search:'חיפוש נושאים, headers, כלים… (לחצו /)', searchLabel:'חיפוש בקורס', lang:'English', langLabel:'Switch to English', chapters:'פרקים',
+  chapterCard:'פרק ', subject:'נושא ', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה'
+} : {
+  intro:'Introduction', allAnim:'All animations', loading:'Loading…', loadingCh:'Loading chapter ', loadErr:'Could not load this chapter (', loadErr2:'). Refresh the page to try again.',
+  animH:'▶ Animations', animP:'Press Play to watch, or step through with ⏮ ⏭. The right panel shows the real header fields at each step.',
+  vEyebrow:'All animations', vH1:'Packet animations', vLead:'Every scenario from every chapter. Pick one below.', thCh:'Chapter', thAn:'Animation',
+  noMatch:'No matches. Try another term.', indexing:'Still indexing chapters…', resAnim:'▶ ANIMATION · CH ', resCh:'CH ',
+  search:'Search topics, headers, tools… (press /)', searchLabel:'Search the course', lang:'עברית', langLabel:'החלפה לעברית', chapters:'Chapters',
+  chapterCard:'CHAPTER ', subject:'SUBJECT ', anim1:'1 animation', animN:' animations', reading:'reading'
+};
+const cT = c => HE ? c.ht : c.t, cD = c => HE ? c.hd : c.d, gT = g => HE ? g.ht : g.t, gD = g => HE ? g.hd : g.d;
+const aT = s => Anim.loc(s).title;
+const nAnim = k => k ? (k === 1 ? L.anim1 : k + L.animN) : L.reading;
 const $ = (s, r) => (r || document).querySelector(s);
 const main = $('#main'), rail = $('#rail');
 const cache = {};
 let player = null;
 
 // ---------- rail ----------
-rail.innerHTML = '<a href="#home" data-ch="home"><span>⌂</span>Introduction</a>' + SUBJ.map(g => '<div class="grp">' + esc(g.t) + '</div>' + g.ch.map(id => { const c = getCh(id); return '<a href="#ch-' + c.id + '" data-ch="' + c.id + '"><span>' + c.id + '</span>' + esc(c.t) + '</a>'; }).join('')).join('') + '<hr><a href="#videos" data-ch="videos"><span>▶</span>All animations</a>';
+rail.innerHTML = '<a href="#home" data-ch="home"><span>⌂</span>' + L.intro + '</a>' + SUBJ.map(g => '<div class="grp">' + esc(gT(g)) + '</div>' + g.ch.map(id => { const c = getCh(id); return '<a href="#ch-' + c.id + '" data-ch="' + c.id + '"><span>' + c.id + '</span>' + esc(cT(c)) + '</a>'; }).join('')).join('') + '<hr><a href="#videos" data-ch="videos"><span>▶</span>' + L.allAnim + '</a>';
+rail.setAttribute('aria-label', L.chapters);
+const qInput = $('#q'); qInput.placeholder = L.search; qInput.setAttribute('aria-label', L.searchLabel);
+const langBtn = $('#langBtn'); langBtn.textContent = L.lang; langBtn.setAttribute('aria-label', L.langLabel); langBtn.lang = HE ? 'en' : 'he';
+langBtn.onclick = () => { try { localStorage.setItem('netsec-lang', HE ? 'en' : 'he'); } catch (e) {} location.reload(); };
 $('#menuBtn').onclick = () => { const o = rail.classList.toggle('open'); $('#menuBtn').setAttribute('aria-expanded', o); };
 rail.addEventListener('click', e => { if (e.target.closest('a')) rail.classList.remove('open'); });
 
@@ -301,15 +337,14 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&l
 function getCh(id){ return CH.find(c => c.id === id); }
 async function load(id){
   if (cache[id]) return cache[id];
-  const c = getCh(id); const r = await fetch('ch/' + c.file); if (!r.ok) throw new Error('HTTP ' + r.status);
+  const c = getCh(id); const r = await fetch('ch/' + (HE ? 'he/' : '') + c.file); if (!r.ok) throw new Error('HTTP ' + r.status);
   cache[id] = await r.text(); return cache[id];
 }
 function setOn(key){ rail.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.ch === key)); }
 function stopPlayer(){ if (player) { player.destroy(); player = null; } }
 
 // ---------- views ----------
-function home(){
-  stopPlayer(); setOn('home');
+function homeEn(){
   const n = Anim.scenarios.length;
   main.innerHTML = '<div class="wrap"><section class="intro" aria-label="Introduction"><div>'
    + '<div class="eyebrow">HIT · Holon Institute of Technology</div>'
@@ -318,16 +353,28 @@ function home(){
    + '<div class="stats"><span>11 chapters</span><span>5 subjects</span><span>' + n + ' packet animations</span><span>search across everything</span></div></div>'
    + '<aside class="author"><div class="eyebrow">Created by</div><div class="who">Eden Alon</div><p class="note" style="margin:.2rem 0 0">Computer Science, 3rd year</p><dl><dt>Course</dt><dd><span class="he" lang="he">אבטחת רשתות ומשרתת</span></dd><dt>Institute</dt><dd>HIT, Holon Institute of Technology</dd><dt>Purpose</dt><dd>A helping tool for studying the course</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd></dl></aside></section>'
    + '<div class="how"><div><b>Start with 00</b><p class="note">Packet foundations explains each header field once; later chapters show how each field is used and abused.</p></div><div><b>Watch, then read</b><p class="note">Each chapter opens with its animations. Pause on any step to read the exact header values.</p></div><div><b>Search</b><p class="note">Press / and type any term: a header field, a port, an attack, a tool.</p></div></div>'
-   + SUBJ.map((g, i) => '<section class="subj"><div class="subj-h"><span class="num">SUBJECT ' + (i + 1) + '</span><h2>' + esc(g.t) + '</h2><p>' + esc(g.d) + '</p></div><div class="cards">' + g.ch.map(id => { const c = getCh(id), k = Anim.byChapter(c.id).length; return '<a class="card" href="#ch-' + c.id + '"><span class="num">CHAPTER ' + c.id + '</span><b>' + esc(c.t) + '</b><small>' + esc(c.d) + '</small><span class="meta">' + (k ? k + ' animation' + (k > 1 ? 's' : '') : 'reading') + '</span></a>'; }).join('') + '</div></section>').join('')
+   + SUBJ.map((g, i) => '<section class="subj"><div class="subj-h"><span class="num">SUBJECT ' + (i + 1) + '</span><h2>' + esc(gT(g)) + '</h2><p>' + esc(gD(g)) + '</p></div><div class="cards">' + g.ch.map(id => { const c = getCh(id), k = Anim.byChapter(c.id).length; return '<a class="card" href="#ch-' + c.id + '"><span class="num">CHAPTER ' + c.id + '</span><b>' + esc(c.t) + '</b><small>' + esc(c.d) + '</small><span class="meta">' + (k ? k + ' animation' + (k > 1 ? 's' : '') : 'reading') + '</span></a>'; }).join('') + '</div></section>').join('')
    + '<p class="disclaimer">An independent study aid written by a student, not official course material and not affiliated with or endorsed by HIT or the course staff. The explanations are original summaries of the course topics; real-world notes marked as additions go beyond the slides. Tools are described for learning and for authorized lab use only.</p></div>';
-  window.scrollTo(0, 0);
 }
+function homeHe(){
+  const n = Anim.scenarios.length;
+  main.innerHTML = '<div class="wrap"><section class="intro" aria-label="מבוא"><div>'
+   + '<div class="eyebrow">HIT · מכון טכנולוגי חולון</div>'
+   + '<h1>אבטחת רשתות ומשרתת, packet אחרי packet.</h1>'
+   + '<p class="lead">כלי עזר ללימוד הקורס <b>אבטחת רשתות ומשרתת</b> (Network and Server Security). הוא מסביר כל נושא עד הרמה של לאן כל packet הולך, אילו headers הוא נושא ולמה, ומה השלבים המדויקים של כל פרוטוקול, תקיפה והגנה. מונחים טכניים ושמות שדות נשארים באנגלית, כמו במבחן ובכלים.</p>'
+   + '<div class="stats"><span>11 פרקים</span><span>5 נושאים</span><span>' + n + ' אנימציות של packets</span><span>חיפוש בכל התוכן</span></div></div>'
+   + '<aside class="author"><div class="eyebrow">נוצר ע"י</div><div class="who">עדן אלון</div><p class="note" style="margin:.2rem 0 0">מדעי המחשב, שנה ג׳</p><dl><dt>קורס</dt><dd>אבטחת רשתות ומשרתת</dd><dt>מוסד</dt><dd>HIT, מכון טכנולוגי חולון</dd><dt>מטרה</dt><dd>כלי עזר ללימוד הקורס</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd></dl></aside></section>'
+   + '<div class="how"><div><b>להתחיל מ-00</b><p class="note">יסודות ה-packet מסביר כל שדה header פעם אחת; הפרקים הבאים מראים איך כל שדה משמש ומנוצל.</p></div><div><b>לצפות, ואז לקרוא</b><p class="note">כל פרק נפתח באנימציות שלו. עצרו בכל צעד כדי לקרוא את ערכי ה-header המדויקים.</p></div><div><b>לחפש</b><p class="note">לחצו / והקלידו כל מונח: שדה header, פורט, תקיפה, כלי. החיפוש עובד גם בעברית.</p></div></div>'
+   + SUBJ.map((g, i) => '<section class="subj"><div class="subj-h"><span class="num">' + L.subject + (i + 1) + '</span><h2>' + esc(gT(g)) + '</h2><p>' + esc(gD(g)) + '</p></div><div class="cards">' + g.ch.map(id => { const c = getCh(id), k = Anim.byChapter(c.id).length; return '<a class="card" href="#ch-' + c.id + '"><span class="num">' + L.chapterCard + c.id + '</span><b>' + esc(cT(c)) + '</b><small>' + esc(cD(c)) + '</small><span class="meta">' + nAnim(k) + '</span></a>'; }).join('') + '</div></section>').join('')
+   + '<p class="disclaimer">כלי עזר עצמאי שנכתב ע"י סטודנט. זה לא חומר רשמי של הקורס, ואין לו קשר ל-HIT או לצוות הקורס ולא קיבל את אישורם. ההסברים הם סיכומים מקוריים של נושאי הקורס; הערות "עולם אמיתי" ו"תוספות" חורגות מהשקפים. הכלים מתוארים ללמידה ולשימוש במעבדה מורשית בלבד.</p></div>';
+}
+function home(){ stopPlayer(); setOn('home'); HE ? homeHe() : homeEn(); window.scrollTo(0, 0); }
 function vidStrip(list, startId){
   const box = document.createElement('div'); box.className = 'vids';
-  box.innerHTML = '<div class="vids-h"><h2>▶ Animations</h2><p>Press Play to watch, or step through with ⏮ ⏭. The right panel shows the real header fields at each step.</p></div><div class="vtabs"></div><div class="vplayer"></div>';
+  box.innerHTML = '<div class="vids-h"><h2>' + L.animH + '</h2><p>' + L.animP + '</p></div><div class="vtabs"></div><div class="vplayer"></div>';
   const tabs = $('.vtabs', box), host = $('.vplayer', box);
   const pick = (id) => { stopPlayer(); tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === id)); player = Anim.mount(host, id); };
-  list.forEach(s => { const b = document.createElement('button'); b.type = 'button'; b.dataset.id = s.id; b.textContent = s.title; b.onclick = () => pick(s.id); tabs.appendChild(b); });
+  list.forEach(s => { const b = document.createElement('button'); b.type = 'button'; b.dataset.id = s.id; b.textContent = aT(s); b.onclick = () => pick(s.id); tabs.appendChild(b); });
   if (list.length < 2) tabs.hidden = true;
   setTimeout(() => pick(startId && list.some(s => s.id === startId) ? startId : list[0].id));
   return box;
@@ -335,8 +382,8 @@ function vidStrip(list, startId){
 async function chapter(id, sec){
   stopPlayer(); setOn(id);
   const c = getCh(id); if (!c) return home();
-  main.innerHTML = '<div class="wrap loading">Loading chapter ' + id + '…</div>';
-  let html; try { html = await load(id); } catch (e) { main.innerHTML = '<div class="wrap loading">Could not load this chapter (' + esc(e.message) + '). Refresh the page to try again.</div>'; return; }
+  main.innerHTML = '<div class="wrap loading">' + L.loadingCh + id + '…</div>';
+  let html; try { html = await load(id); } catch (e) { main.innerHTML = '<div class="wrap loading">' + L.loadErr + esc(e.message) + L.loadErr2 + '</div>'; return; }
   const w = document.createElement('div'); w.className = 'wrap'; w.innerHTML = html;
   main.innerHTML = ''; main.appendChild(w);
   const list = Anim.byChapter(id);
@@ -348,11 +395,11 @@ async function chapter(id, sec){
 function videos(start){
   stopPlayer(); setOn('videos');
   const w = document.createElement('div'); w.className = 'wrap';
-  w.innerHTML = '<header class="top"><div class="eyebrow">All animations</div><h1>Packet animations</h1><p class="lead">Every scenario from every chapter. Pick one below.</p></header>';
+  w.innerHTML = '<header class="top"><div class="eyebrow">' + L.vEyebrow + '</div><h1>' + L.vH1 + '</h1><p class="lead">' + L.vLead + '</p></header>';
   main.innerHTML = ''; main.appendChild(w);
   w.appendChild(vidStrip(Anim.scenarios, start));
   const idx = document.createElement('div'); idx.className = 'tbl';
-  idx.innerHTML = '<table><thead><tr><th>Chapter</th><th>Animation</th></tr></thead><tbody>' + Anim.scenarios.map(s => '<tr><td class="num">' + s.ch + ' · ' + esc(getCh(s.ch).t) + '</td><td><a href="#v-' + s.id + '">' + esc(s.title) + '</a></td></tr>').join('') + '</tbody></table>';
+  idx.innerHTML = '<table><thead><tr><th>' + L.thCh + '</th><th>' + L.thAn + '</th></tr></thead><tbody>' + Anim.scenarios.map(s => '<tr><td class="num">' + s.ch + ' · ' + esc(cT(getCh(s.ch))) + '</td><td><a href="#v-' + s.id + '">' + esc(aT(s)) + '</a></td></tr>').join('') + '</tbody></table>';
   w.appendChild(idx);
   window.scrollTo(0, 0);
 }
@@ -389,7 +436,7 @@ async function buildIndex(){
       });
     } catch (e) { /* chapter unavailable: skip in search */ }
   }));
-  Anim.scenarios.forEach(s => { const text = s.steps.map(x => x.say.replace(/<[^>]+>/g, '')).join(' ') + ' ' + s.steps.map(x => (x.h || []).map(h => h.t + ' ' + h.f.map(f => f.join(' ')).join(' ')).join(' ')).join(' ');
+  Anim.scenarios.map(Anim.loc).forEach(s => { const text = s.steps.map(x => x.say.replace(/<[^>]+>/g, '')).join(' ') + ' ' + s.steps.map(x => (x.h || []).map(h => h.t + ' ' + h.f.map(f => f.join(' ')).join(' ')).join(' ')).join(' ');
     IDX.push({ kind: 'vid', ch: s.ch, id: s.id, title: s.title, text, lt: s.title.toLowerCase(), lx: text.toLowerCase() }); });
   idxReady = true;
 }
@@ -422,8 +469,8 @@ function showRes(){
   const q = qEl.value.trim(); sel = -1;
   if (!q) { res.hidden = true; return; }
   cur = search(q, 12);
-  if (!cur.length) { res.innerHTML = '<div class="res-empty">' + (idxReady ? 'No matches. Try another term, or ask the question.' : 'Still indexing chapters…') + '</div>'; res.hidden = false; return; }
-  res.innerHTML = cur.map((it, k) => '<button class="res" type="button" data-k="' + k + '"><span class="k">' + (it.kind === 'vid' ? '▶ ANIMATION · CH ' : 'CH ') + it.ch + ' · ' + esc(getCh(it.ch).t) + '</span><b>' + esc(it.title) + '</b><small>' + snippet(it, q) + '</small></button>').join('');
+  if (!cur.length) { res.innerHTML = '<div class="res-empty">' + (idxReady ? L.noMatch : L.indexing) + '</div>'; res.hidden = false; return; }
+  res.innerHTML = cur.map((it, k) => '<button class="res" type="button" data-k="' + k + '"><span class="k">' + (it.kind === 'vid' ? L.resAnim : L.resCh) + it.ch + ' · ' + esc(cT(getCh(it.ch))) + '</span><b>' + esc(it.title) + '</b><small>' + snippet(it, q) + '</small></button>').join('');
   res.hidden = false;
 }
 function openRes(k){ const it = cur[k]; if (!it) return; res.hidden = true; qEl.blur(); const h = hrefOf(it); if (location.hash === h) route(); else location.hash = h; }
@@ -503,7 +550,7 @@ async function ask_(q){
   const notes = hits.map(h => '[Chapter ' + h.ch + ' – ' + getCh(h.ch).t + ' › ' + h.title + ']\n' + h.text.slice(0, 3200)).join('\n\n')
     + (vids.length ? '\n\n' + vids.map(v => '[Animation: ' + v.title + ']\n' + v.text.slice(0, 1500)).join('\n\n') : '');
   const userTurn = 'COURSE NOTES (most relevant sections):\n' + (notes || '(no matching section)') + '\n\nQUESTION: ' + q;
-  const msgs = [{ role: 'user', content: RULES }].concat(turns.slice(-6)).concat([{ role: 'user', content: userTurn }]);
+  const msgs = [{ role: 'user', content: RULES + (HE ? '\nAnswer in Hebrew. Keep technical terms, protocol names and header field names in English.\n' : '') }].concat(turns.slice(-6)).concat([{ role: 'user', content: userTurn }]);
   busy = true; ctl = new AbortController(); send.textContent = 'Stop'; send.classList.add('stop');
   try {
     const r = await sample(msgs, { cache: false, signal: ctl.signal, onText: ({ text }) => { a.innerHTML = md(text); log.scrollTop = log.scrollHeight; } });

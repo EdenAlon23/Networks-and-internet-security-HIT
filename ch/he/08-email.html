@@ -1,0 +1,270 @@
+<header class="top">
+  <div class="eyebrow">פרק 08</div>
+  <h1>אבטחת דואר אלקטרוני</h1>
+  <p class="lead">למה מייל לא מאובטח מטבעו, איך בונים מייל מאובטח מאבני הבניין של פרקי ההצפנה (סודיות, חתימה, שניהם), PGP לעומק (חמשת השירותים, דחיסה, Radix-64, Key rings ו-Web of trust), S/MIME, וההגנות שמשתמשים בהן היום נגד זיוף שולח.</p>
+  <nav class="toc" aria-label="תוכן עניינים">
+    <a href="#problem">הבעיה</a><a href="#spoof">זיוף שולח</a><a href="#build">מייל מאובטח</a><a href="#pgp">PGP</a><a href="#pgpops">פעולות PGP</a><a href="#radix">Radix-64</a><a href="#keys">מפתחות ב-PGP</a><a href="#smime">S/MIME</a><a href="#today">ההגנות היום</a><a href="#review">חזרה</a>
+  </nav>
+</header>
+
+<section id="problem">
+  <h2><span class="n">1</span>למה מייל לא מאובטח</h2>
+  <div class="col"><p>מייל הוא אחד השירותים הנפוצים ברשת, ובמקור תוכנן בלי שום אבטחה:</p></div>
+  <div class="grid">
+    <div class="box"><h4 style="color:var(--atk)">Confidentiality</h4><p>התוכן ניתן לצפייה בדרך: SMTP, POP3, IMAP שולחים בטקסט גלוי. וגם מנהל המערכת בשרת היעד יכול לקרוא.</p></div>
+    <div class="box"><h4 style="color:var(--atk)">Authentication</h4><p>קל מאוד להתחזות לשולח אחר. שדה <code>From:</code> הוא סתם טקסט.</p></div>
+    <div class="box"><h4 style="color:var(--atk)">Integrity</h4><p>אין הבטחה שההודעה לא שונתה בדרך.</p></div>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 200" width="720" role="img" aria-label="Mail path">
+      <g font-size="13">
+        <rect x="610" y="70" width="95" height="50" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="657" y="92" text-anchor="middle" font-weight="700">Alice</text><text x="657" y="110" text-anchor="middle" font-size="11">MUA</text>
+        <rect x="450" y="70" width="120" height="50" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="510" y="92" text-anchor="middle" font-weight="700">שרת שולח</text><text x="510" y="110" text-anchor="middle" font-size="11">MTA</text>
+        <rect x="270" y="70" width="140" height="50" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="340" y="92" text-anchor="middle" font-weight="700">שרתי ביניים</text><text x="340" y="110" text-anchor="middle" font-size="11">Relays</text>
+        <rect x="110" y="70" width="120" height="50" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="170" y="92" text-anchor="middle" font-weight="700">שרת יעד</text><text x="170" y="110" text-anchor="middle" font-size="11">Mailbox</text>
+        <rect x="10" y="70" width="70" height="50" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="45" y="100" text-anchor="middle" font-weight="700">Bob</text>
+        <g stroke="var(--muted)" stroke-width="2"><line x1="608" y1="95" x2="574" y2="95" marker-end="url(#ar)"/><line x1="448" y1="95" x2="414" y2="95" marker-end="url(#ar)"/><line x1="268" y1="95" x2="234" y2="95" marker-end="url(#ar)"/><line x1="108" y1="95" x2="84" y2="95" marker-end="url(#ar)"/></g>
+        <g font-size="11" text-anchor="middle" fill="var(--muted)"><text x="590" y="140">SMTP/587</text><text x="430" y="140">SMTP/25</text><text x="250" y="140">SMTP/25</text><text x="95" y="140">IMAP/POP3</text></g>
+        <g fill="var(--atk)"><circle cx="590" cy="160" r="5"/><circle cx="430" cy="160" r="5"/><circle cx="340" cy="160" r="5"/><circle cx="250" cy="160" r="5"/><circle cx="170" cy="160" r="5"/><circle cx="95" cy="160" r="5"/></g>
+        <text x="360" y="190" text-anchor="middle" fill="var(--atk)">כל נקודה אדומה = מקום שבו אפשר לקרוא או לשנות (Sniffing, שרת נפרץ, מנהל מערכת)</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+  <p>תחומי אבטחת מייל לפי ההרצאה: <b>וירוסים</b> (הגנה בשרת ובדסקטופ), <b>Hoaxes</b> (שכל ישר והדרכה), <b>ספאם</b> (מסננים), ו<b>חוסר סודיות</b> (S/MIME ו-PGP).</p>
+  <div class="why"><span class="tag">TLS בדרך לא מספיק</span><p>STARTTLS מצפין רק כל קפיצה בנפרד (Link encryption מהפרק הסימטרי), כל שרת בדרך רואה את המייל, ותוקף יכול להסיר את הפקודה STARTTLS ולהוריד לטקסט גלוי. PGP ו-S/MIME נותנים <b>End-to-end</b>: רק אליס ובוב.</p></div>
+  </div>
+</section>
+
+<section id="spoof">
+  <h2><span class="n">2</span>איך מזייפים שולח</h2>
+  <div class="col">
+<pre>$ nc mail.victim.co.il 25
+220 mail.victim.co.il ESMTP
+HELO anything
+MAIL FROM:&lt;ceo@victim.co.il&gt;          ← אף אחד לא בודק
+RCPT TO:&lt;cfo@victim.co.il&gt;
+DATA
+From: "CEO" &lt;ceo@victim.co.il&gt;
+Subject: העברה דחופה
+...
+.
+250 OK</pre>
+  <p class="note">להמחשה בלבד: כך נראה פרוטוקול SMTP. שרתים מודרניים עם SPF/DMARC ידחו או יסמנו את זה.</p>
+  <div class="atk"><span class="tag">ניצול</span><p>פישינג ו-<b>Business Email Compromise</b> (מייל "מהמנכ"ל" לכספים): לפי ה-FBI, הפשע הסייבר עם הנזק הכספי הגבוה ביותר, מיליארדי דולרים בשנה. גם Lookalike domains (<code>rn</code> במקום <code>m</code>), ו-Display name spoofing ("CEO" &lt;random@gmail.com&gt;).</p></div>
+  </div>
+<h3>איך SMTP מעביר הודעה (תוספת)</h3><div class="tbl"><table><thead><tr><th>פרוטוקול</th><th>פורט</th><th>תפקיד</th></tr></thead><tbody><tr><td>SMTP (MTA ל-MTA)</td><td>TCP 25</td><td>מסירה בין שרתים, לפי רשומת ה-MX של דומיין המקבל</td></tr><tr><td>Submission</td><td>TCP 587 (STARTTLS) / 465 (TLS מההתחלה)</td><td>לקוח לשרת שלו, עם אימות</td></tr><tr><td>POP3 / IMAP</td><td>110 / 143 (995 / 993 עם TLS)</td><td>המקבל קורא את התיבה</td></tr></tbody></table></div><div class="col"><p>יש שתי כתובות "שולח" נפרדות. ה-<b>envelope</b> (הפקודות MAIL FROM / RCPT TO) משמש את השרתים לניתוב ולהחזרות. ה-<b>header</b> (From:, To:, Subject: בתוך DATA) הוא מה שהמשתמש רואה. ב-SMTP הבסיסי שום דבר לא מחבר ביניהם. כל שרת בדרך מוסיף header של <code>Received:</code> למעלה, כך שקריאה שלהם מלמטה למעלה חושפת את הנתיב האמיתי.</p></div>
+</section>
+
+<section id="build">
+  <h2><span class="n">3</span>בונים מייל מאובטח בשלושה שלבים</h2>
+  <h3>שלב א': סודיות</h3>
+  <figure>
+    <svg viewBox="0 0 720 230" width="720" role="img" aria-label="Confidential mail">
+      <g font-size="13">
+        <text x="560" y="20" text-anchor="middle" font-weight="700">Alice</text><text x="160" y="20" text-anchor="middle" font-weight="700">Bob</text>
+        <line x1="360" y1="10" x2="360" y2="220" stroke="var(--line)" stroke-dasharray="4 4"/><text x="360" y="225" text-anchor="middle" font-size="11" fill="var(--muted)">Internet</text>
+        <rect x="620" y="40" width="80" height="34" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="660" y="62" text-anchor="middle">m</text>
+        <rect x="620" y="130" width="80" height="34" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="660" y="152" text-anchor="middle">K<tspan font-size="10">S</tspan> אקראי</text>
+        <rect x="470" y="36" width="110" height="42" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="525" y="62" text-anchor="middle">K<tspan font-size="10">S</tspan>( · )</text>
+        <rect x="470" y="126" width="110" height="42" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="525" y="152" text-anchor="middle">K<tspan font-size="10">B</tspan><tspan font-size="10" dy="-5">+</tspan><tspan dy="5">( · )</tspan></text>
+        <g stroke="var(--muted)" stroke-width="2"><line x1="618" y1="57" x2="584" y2="57" marker-end="url(#ar)"/><line x1="618" y1="147" x2="584" y2="147" marker-end="url(#ar)"/><line x1="640" y1="128" x2="560" y2="82" marker-end="url(#ar)"/></g>
+        <rect x="390" y="85" width="40" height="34" rx="6" fill="var(--surface)" stroke="var(--ink)"/><text x="410" y="107" text-anchor="middle">+</text>
+        <g stroke="var(--muted)" stroke-width="2"><line x1="468" y1="57" x2="425" y2="88" marker-end="url(#ar)"/><line x1="468" y1="147" x2="425" y2="116" marker-end="url(#ar)"/><line x1="388" y1="102" x2="314" y2="102" marker-end="url(#ar)"/></g>
+        <rect x="240" y="85" width="40" height="34" rx="6" fill="var(--surface)" stroke="var(--ink)"/><text x="260" y="107" text-anchor="middle">−</text>
+        <rect x="120" y="126" width="110" height="42" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="175" y="152" text-anchor="middle">K<tspan font-size="10">B</tspan><tspan font-size="10" dy="-5">−</tspan><tspan dy="5">( · )</tspan></text>
+        <rect x="120" y="36" width="110" height="42" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="175" y="62" text-anchor="middle">K<tspan font-size="10">S</tspan>( · )</text>
+        <rect x="15" y="40" width="70" height="34" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="50" y="62" text-anchor="middle">m</text>
+        <g stroke="var(--muted)" stroke-width="2"><line x1="252" y1="88" x2="234" y2="65" marker-end="url(#ar)"/><line x1="252" y1="116" x2="234" y2="138" marker-end="url(#ar)"/><line x1="140" y1="124" x2="160" y2="82" marker-end="url(#ar)"/><line x1="118" y1="57" x2="89" y2="57" marker-end="url(#ar)"/></g>
+        <text x="80" y="155" text-anchor="middle" font-size="11" fill="var(--muted)">→ K<tspan font-size="9">S</tspan></text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col"><p>אליס מייצרת מפתח סימטרי אקראי K<sub>S</sub>, מצפינה איתו את m (יעיל), מצפינה את K<sub>S</sub> עם המפתח הציבורי של בוב, ושולחת <code>K<sub>S</sub>(m) + K<sub>B</sub><sup>+</sup>(K<sub>S</sub>)</code>. בוב פותח את K<sub>S</sub> עם המפתח הפרטי שלו, ואיתו את m. זו בדיוק <b>הצפנה היברידית</b>.</p></div>
+  <h3>שלב ב': אימות ושלמות</h3>
+  <div class="col"><p>אליס חותמת: שולחת את m <b>גלוי</b> + <code>K<sub>A</sub><sup>−</sup>(H(m))</code>. בוב מפענח את החתימה עם K<sub>A</sub><sup>+</sup>, מחשב H(m) בעצמו ומשווה.</p></div>
+  <h3>שלב ג': הכל ביחד</h3>
+  <figure>
+    <svg viewBox="0 0 720 150" width="720" role="img" aria-label="Sign then encrypt">
+      <g font-size="13">
+        <rect x="610" y="50" width="90" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="655" y="75" text-anchor="middle">m</text>
+        <rect x="455" y="40" width="120" height="60" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="515" y="64" text-anchor="middle" font-weight="700">חתימה</text><text x="515" y="84" text-anchor="middle" font-size="12">m + K<tspan font-size="9">A</tspan><tspan dy="-5" font-size="9">−</tspan><tspan dy="5">(H(m))</tspan></text>
+        <rect x="280" y="40" width="140" height="60" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="350" y="64" text-anchor="middle" font-weight="700">הצפנה</text><text x="350" y="84" text-anchor="middle" font-size="12">K<tspan font-size="9">S</tspan>( · ) + K<tspan font-size="9">B</tspan><tspan dy="-5" font-size="9">+</tspan><tspan dy="5">(K</tspan><tspan font-size="9">S</tspan>)</text>
+        <rect x="120" y="50" width="120" height="40" rx="6" fill="var(--surface)" stroke="var(--ink)"/><text x="180" y="75" text-anchor="middle">Internet</text>
+        <g stroke="var(--muted)" stroke-width="2"><line x1="608" y1="70" x2="579" y2="70" marker-end="url(#ar)"/><line x1="453" y1="70" x2="424" y2="70" marker-end="url(#ar)"/><line x1="278" y1="70" x2="244" y2="70" marker-end="url(#ar)"/></g>
+        <text x="360" y="135" text-anchor="middle">אליס משתמשת בשלושה מפתחות: הפרטי שלה, הציבורי של בוב, ומפתח סימטרי חדש</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col"><div class="why"><span class="tag">למה קודם חותמים ואז מצפינים</span><p>אם מצפינים ואז חותמים, תוקף יכול להסיר את החתימה ולחתום בעצמו על ה-Ciphertext (בלי לדעת מה בפנים), ולהיראות כשולח. חתימה בפנים קושרת את החותם לתוכן עצמו, והיא גם מוסתרת מעיני המאזין (מי שלח למי).</p></div></div>
+</section>
+
+<section id="pgp">
+  <h2><span class="n">4</span>PGP (Pretty Good Privacy)</h2>
+  <div class="col">
+  <p>נוצר ע"י <b>Phil Zimmermann</b> (1991). הסטנדרט דה-פקטו (אחרים: S/MIME, MOSS, PGP/MIME). חינמי, עולמי, ידידותי, רץ על פלטפורמות רבות, מבוסס על האלגוריתמים הטובים ביותר, ו<b>לא תלוי בגופים ממשלתיים</b>. משמש למייל ולאחסון קבצים. היום בעיקר במימוש הפתוח <b>GnuPG</b> (תקן OpenPGP, RFC 4880).</p>
+  <p class="note">היסטוריה: ממשלת ארה"ב חקרה את זימרמן שלוש שנים על "ייצוא נשק" (הצפנה חזקה נחשבה תחמושת). הוא פרסם את קוד המקור כספר מודפס, כי ספר מוגן ע"י התיקון הראשון.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>שירות</th><th>אלגוריתם</th><th>שקוף למשתמש?</th></tr></thead>
+    <tbody>
+      <tr><td><b>Authentication</b> (חתימה)</td><td>DSS/SHA או RSA/SHA</td><td>לא</td></tr>
+      <tr><td><b>Confidentiality</b> (הצפנה)</td><td>AES, 3DES, IDEA, CAST-128 + RSA או Diffie-Hellman/ElGamal</td><td>לא</td></tr>
+      <tr><td>Compression</td><td>ZIP</td><td>כן</td></tr>
+      <tr><td>Email compatibility</td><td>Radix-64</td><td>כן</td></tr>
+      <tr><td>Segmentation &amp; Reassembly</td><td>-</td><td>כן</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="pgpops">
+  <h2><span class="n">5</span>פעולות PGP</h2>
+  <figure>
+    <svg viewBox="0 0 720 280" width="720" role="img" aria-label="PGP sender">
+      <g font-size="13">
+        <text x="360" y="20" text-anchor="middle" font-weight="700">PGP בצד השולח (חתימה + דחיסה + הצפנה + Radix-64)</text>
+        <rect x="630" y="45" width="75" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="667" y="70" text-anchor="middle">M</text>
+        <rect x="520" y="45" width="80" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="560" y="70" text-anchor="middle">H (SHA)</text>
+        <rect x="405" y="40" width="95" height="50" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="452" y="62" text-anchor="middle">EP</text><text x="452" y="80" text-anchor="middle" font-size="11" direction="ltr">KR_a</text>
+        <rect x="330" y="105" width="55" height="40" rx="6" fill="var(--surface)" stroke="var(--ink)"/><text x="357" y="130" text-anchor="middle">‖</text>
+        <rect x="245" y="105" width="60" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="275" y="130" text-anchor="middle">Z</text>
+        <rect x="135" y="100" width="90" height="50" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="180" y="122" text-anchor="middle">EC</text><text x="180" y="140" text-anchor="middle" font-size="11" direction="ltr">K_s</text>
+        <rect x="245" y="185" width="80" height="34" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="285" y="207" text-anchor="middle" direction="ltr">K_s random</text>
+        <rect x="135" y="180" width="90" height="44" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="180" y="200" text-anchor="middle">EP</text><text x="180" y="216" text-anchor="middle" font-size="11" direction="ltr">KU_b</text>
+        <rect x="70" y="140" width="45" height="40" rx="6" fill="var(--surface)" stroke="var(--ink)"/><text x="92" y="165" text-anchor="middle">‖</text>
+        <rect x="10" y="230" width="105" height="40" rx="6" fill="var(--def-soft)" stroke="var(--def)"/><text x="62" y="255" text-anchor="middle">Radix-64</text>
+        <g stroke="var(--muted)" stroke-width="1.8" fill="none">
+          <line x1="628" y1="65" x2="604" y2="65" marker-end="url(#ar)"/><line x1="518" y1="65" x2="504" y2="65" marker-end="url(#ar)"/>
+          <path d="M452,90 L452,125 L389,125" marker-end="url(#ar)"/><path d="M667,85 L667,135 L389,135" marker-end="url(#ar)"/>
+          <line x1="328" y1="125" x2="309" y2="125" marker-end="url(#ar)"/><line x1="243" y1="125" x2="229" y2="125" marker-end="url(#ar)"/>
+          <line x1="243" y1="202" x2="229" y2="202" marker-end="url(#ar)"/><path d="M285,185 L285,165 L180,165 L180,154" marker-end="url(#ar)"/>
+          <path d="M133,125 L92,125 L92,138" marker-end="url(#ar)"/><path d="M133,202 L92,202 L92,184" marker-end="url(#ar)"/>
+          <line x1="70" y1="180" x2="62" y2="228" marker-end="url(#ar)"/>
+        </g>
+      </g>
+    </svg>
+    <figcaption>EP/DP = הצפנה/פענוח במפתח ציבורי, EC/DC = סימטרי, Z = דחיסה, ‖ = שרשור. בצד המקבל הכל הפוך: Radix-64 → DP עם KR<sub>b</sub> → K<sub>s</sub> → DC → Z<sup>−1</sup> → אימות חתימה.</figcaption>
+  </figure>
+  <div class="grid">
+    <div class="box"><h4>Authentication</h4><ol><li>השולח יוצר הודעה.</li><li>SHA-1 יוצר Hash של 160 ביט.</li><li>ה-Hash מוצפן במפתח הפרטי של השולח ומוצמד.</li><li>המקבל מפענח עם המפתח הציבורי.</li><li>המקבל מחשב Hash ומשווה. שווה → אותנטי.</li></ol></div>
+    <div class="box"><h4>Confidentiality</h4><ol><li>השולח מייצר מפתח סשן אקראי להודעה הזו בלבד.</li><li>מצפין את ההודעה (AES, 3DES, IDEA, CAST-128).</li><li>מצפין את מפתח הסשן ב-RSA עם הציבורי של המקבל ומצמיד.</li><li>המקבל פותח את מפתח הסשן עם הפרטי.</li><li>ומפענח את ההודעה.</li></ol></div>
+  </div>
+  <div class="col">
+  <p>שני השירותים משולבים: ההצפנה <b>"עוטפת"</b> את תהליך החתימה (חותמים ואז מצפינים).</p>
+  <h3>למה דחיסה בדיוק שם</h3>
+  <ul>
+    <li><b>אחרי החתימה:</b> חותמים על ההודעה הלא דחוסה, כדי שלא צריך לדחוס מחדש בכל אימות (ואלגוריתמי דחיסה שונים נותנים פלט שונה).</li>
+    <li><b>לפני ההצפנה:</b> פחות נתונים להצפין (מהיר יותר), ויותר בטוח, כי להודעה דחוסה יש פחות <b>יתירות</b> (Redundancy), ולכן ניתוח תדירויות ודומיו קשים יותר. (אחרי הצפנה אי אפשר לדחוס, כי Ciphertext נראה אקראי.)</li>
+  </ul>
+  <p><b>Segmentation:</b> פרוטוקולי מייל מגבילים גודל (למשל 50KB), אז PGP מפצל הודעות גדולות ומרכיב אותן בצד השני לפני פענוח ואימות.</p>
+  </div>
+<div class="col"><p>הסדר המלא אצל השולח: <code dir="ltr">m → sign H(m) → ZIP → encrypt with K<sub>S</sub> (+ K<sub>S</sub> wrapped with K<sub>B</sub><sup>+</sup>) → Radix-64 → segment</code>. המקבל עושה את אותו הדבר בסדר הפוך.</p></div>
+</section>
+
+<section id="radix">
+  <h2><span class="n">6</span>Radix-64: תאימות לכל מערכת מייל</h2>
+  <div class="col"><p>PGP הולך לפי "המכנה המשותף הנמוך": לא מניח שמערכת המייל יודעת להעביר בינארי. כל 3 בייטים (24 ביט) מחולקים ל-4 קבוצות של 6 ביט, וכל אחת ממופה לתו ASCII (A–Z, a–z, 0–9, +, /). מוסיפים CRC לזיהוי שגיאות. התוצאה גדולה ב-<b>~33%</b> (4 תווים לכל 3 בייטים).</p></div>
+  <figure>
+    <svg viewBox="0 0 720 170" width="720" role="img" aria-label="Radix64">
+      <g font-size="13" direction="ltr" font-family="var(--f-mono)">
+        <text x="360" y="20" text-anchor="middle" font-family="var(--f-body)" fill="var(--muted)">"Man" → TWFu</text>
+        <g fill="var(--surface)" stroke="var(--line)"><rect x="90" y="30" width="180" height="32"/><rect x="270" y="30" width="180" height="32"/><rect x="450" y="30" width="180" height="32"/></g>
+        <text x="180" y="52" text-anchor="middle">M 0x4D 01001101</text><text x="360" y="52" text-anchor="middle">a 0x61 01100001</text><text x="540" y="52" text-anchor="middle">n 0x6E 01101110</text>
+        <g fill="var(--accent-soft)" stroke="var(--accent)"><rect x="90" y="85" width="135" height="32"/><rect x="225" y="85" width="135" height="32"/><rect x="360" y="85" width="135" height="32"/><rect x="495" y="85" width="135" height="32"/></g>
+        <text x="157" y="107" text-anchor="middle">010011 = 19</text><text x="292" y="107" text-anchor="middle">010110 = 22</text><text x="427" y="107" text-anchor="middle">000101 = 5</text><text x="562" y="107" text-anchor="middle">101110 = 46</text>
+        <g font-size="20" font-weight="700" fill="var(--def)" text-anchor="middle"><text x="157" y="150">T</text><text x="292" y="150">W</text><text x="427" y="150">F</text><text x="562" y="150">u</text></g>
+      </g>
+    </svg>
+  </figure>
+  <div class="col"><p>כך נראית הודעת PGP במייל: <code>-----BEGIN PGP MESSAGE-----</code> ואחריו בלוק Radix-64. זה בעצם Base64 (אותו רעיון בדיוק כמו ב-MIME).</p></div>
+</section>
+
+<section id="keys">
+  <h2><span class="n">7</span>ניהול מפתחות ב-PGP</h2>
+  <div class="grid">
+    <div class="box"><h4>Key ID</h4><p>במקום לשלוח את כל המפתח הציבורי עם כל הודעה, שולחים מזהה: <b>64 הביטים התחתונים</b> של המפתח (KU mod 2<sup>64</sup>). כמעט בוודאות ייחודי. אותו דבר לחתימות.</p><p class="note">היום משתמשים ב-Fingerprint (160 ביט), כי Key ID קצר (32 ביט) זויף בהתנגשויות ("Evil 32", 2014).</p></div>
+    <div class="box"><h4>Key rings</h4><p><b>Public-key ring</b>: כל המפתחות הציבוריים של אחרים שאני מכיר, לפי Key ID.<br><b>Private-key ring</b>: זוגות המפתחות שלי, לפי Key ID, <b>מוצפנים</b> עם Hash של Passphrase.</p></div>
+    <div class="box"><h4>כל משתמש הוא CA</h4><p>במקום CA חיצוני, משתמשים חותמים על מפתחות של אחרים שהם מכירים: <b>Web of trust</b>. רמת האמון במפתח מצטברת ממי שחתם עליו (Key signing parties).</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>שדה בתעודת PGP</th><th>מה יש בו</th></tr></thead>
+    <tbody>
+      <tr><td>PGP version</td><td>איזו גרסה יצרה את המפתח</td></tr>
+      <tr><td>Public key</td><td>המפתח הציבורי + האלגוריתם (RSA, DH, DSA)</td></tr>
+      <tr><td>Holder information</td><td>זהות: שם, User ID (מייל), תמונה</td></tr>
+      <tr><td>Self-signature</td><td>חתימת הבעלים עצמו עם המפתח הפרטי התואם</td></tr>
+      <tr><td>Validity period</td><td>תאריך התחלה ותפוגה</td></tr>
+      <tr><td>Preferred symmetric algorithm</td><td>CAST, IDEA או 3DES</td></tr>
+      <tr><td>(+ חתימות של אחרים)</td><td>בניגוד ל-X.509, לתעודת PGP יכולות להיות הרבה חתימות</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col"><div class="atk"><span class="tag">חולשות PGP בעולם האמיתי (תוספת)</span><ul><li><b>EFAIL (2018):</b> לקוחות מייל שמציגים HTML: התוקף עוטף Ciphertext שיירט בתג <code>&lt;img src="http://evil/</code>, והלקוח מפענח ושולח את ה-Plaintext ב-URL. ניצל חוסר שלמות ב-CFB mode, ועבד גם על S/MIME.</li><li><b>SKS keyserver poisoning (2019):</b> הוספת עשרות אלפי חתימות זבל למפתח שהפילה את GnuPG.</li><li>שמישות: "Why Johnny Can't Encrypt" (1999). רוב האנשים לא מצליחים להשתמש נכון, ולכן PGP נשאר נישתי.</li></ul></div></div>
+</section>
+
+<section id="smime">
+  <h2><span class="n">8</span>S/MIME</h2>
+  <div class="col">
+  <p><b>Secure MIME</b>, מבוסס על MIME. SMTP לא יכול להעביר קבצים בינאריים (תמונות, Word, הרצה), תווים שאינם ASCII (עברית, ערבית, סינית), או הודעות מעל גודל מסוים. <b>MIME</b> (הרחבה של RFC 822) מקודד תוכן כזה ל-ASCII. S/MIME מוסיף לו קריפטוגרפיה, ו<b>הוא PKI</b>.</p>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>Enveloped data</h4><p>תוכן מוצפן + המפתחות הקשורים.</p></div>
+    <div class="box"><h4>Signed data</h4><p>ההודעה מקודדת + Hash חתום. רק מי שיש לו S/MIME יכול לקרוא.</p></div>
+    <div class="box"><h4>Clear-signed data</h4><p>ההודעה המקורית גלויה + חתימה מקודדת. גם בלי S/MIME אפשר לקרוא (רק לא לאמת).</p></div>
+    <div class="box"><h4>Signed &amp; enveloped</h4><p>קינון של חתום ומוצפן.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>תפקיד</th><th>אלגוריתמים (לפי השקף)</th></tr></thead>
+    <tbody>
+      <tr><td>Hash</td><td>SHA-1, MD5 (היום SHA-256)</td></tr>
+      <tr><td>חתימה</td><td>RSA, DSS</td></tr>
+      <tr><td>הצפנת מפתח סשן</td><td>RSA, ElGamal</td></tr>
+      <tr><td>הצפנת הודעה</td><td>AES, 3DES</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col"><p><b>תעודות:</b> S/MIME משתמש ב-<b>X.509</b>, בהיברידיות של היררכיית CA קשיחה ו-Web of trust: לכל לקוח רשימת CA מהימנים וזוגות מפתחות ותעודות משלו, ותעודות חייבות להיות חתומות ע"י CA מהימן.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>PGP</th><th>S/MIME</th></tr></thead>
+    <tbody>
+      <tr><td>מודל אמון</td><td>Web of trust, כל משתמש CA</td><td>היררכיית CA (X.509)</td></tr>
+      <tr><td>תעודות</td><td>PGP (וגם X.509)</td><td>X.509</td></tr>
+      <tr><td>קידוד</td><td>Radix-64</td><td>MIME (Base64)</td></tr>
+      <tr><td>איפה נפוץ</td><td>אנשים פרטיים, קוד פתוח, עיתונאים, חתימת חבילות Linux</td><td>ארגונים (Outlook, Exchange), ממשלות, צבא</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="today">
+  <h2><span class="n">9</span>ההגנות שבאמת עובדות היום נגד זיוף (תוספת)</h2>
+  <div class="col"><p>PGP ו-S/MIME מגנים על <b>תוכן</b>, אבל רוב המיילים לא חתומים. לכן מנגנונים ברמת <b>הדומיין</b>, מבוססי DNS, הפכו לסטנדרט (Gmail ו-Yahoo מחייבים אותם מ-2024 לשולחים גדולים):</p></div>
+  <div class="grid">
+    <div class="box"><h4>SPF</h4><p>רשומת TXT: אילו כתובות IP רשאיות לשלוח מייל בשם הדומיין.<br><code style="font-size:.75em">v=spf1 include:_spf.google.com -all</code></p><p class="note">חולשה: בודק את ה-Envelope (MAIL FROM), לא את ה-From שהמשתמש רואה. נשבר בהעברה (Forwarding).</p></div>
+    <div class="box"><h4>DKIM</h4><p>השרת השולח <b>חותם</b> על Headers וגוף ההודעה עם מפתח פרטי; המפתח הציבורי ב-DNS. זה בדיוק "חתימה על H(m)" מהפרק הקודם, אבל ברמת הדומיין.</p></div>
+    <div class="box"><h4>DMARC</h4><p>מדיניות: מה לעשות כשה-From לא עובר SPF או DKIM <b>ומתיישר</b> לדומיין (none / quarantine / reject), ולאן לשלוח דוחות.<br><code style="font-size:.75em">v=DMARC1; p=reject; rua=mailto:...</code></p></div>
+  </div>
+  <div class="col">
+  <div class="def"><span class="tag">ועוד</span><p>MTA-STS ו-DANE (מחייבים TLS בין שרתים, מונעים STARTTLS stripping), BIMI (לוגו לדומיינים עם DMARC), סינון ספאם ונוזקות (Sandbox לקבצים מצורפים), והדרכות פישינג.</p></div>
+  <div class="real"><span class="tag">עולם אמיתי</span><p>בדיקה מהירה של כל דומיין: <code>dig TXT _dmarc.example.com</code>. דומיין בלי DMARC (או עם <code>p=none</code>) ניתן לזיוף בקלות. זה גם חלק מסיור OSINT (פרק 02): רשומות MX ו-SPF חושפות באיזה ספק מייל הארגון משתמש.</p></div>
+  </div>
+<h3>מה השרת המקבל בודק, לפי הסדר</h3><div class="steps"><ol><li>השרת מקבל את החיבור ובודק את כתובת ה-IP שמתחברת מול רשומת ה-SPF של הדומיין שב-MAIL FROM.</li><li>הוא מביא מה-DNS את המפתח הציבורי של DKIM (לפי d= ו-s= ב-header של <code>DKIM-Signature:</code>, ב-<code>selector._domainkey.example.com</code>) ומאמת את החתימה על ה-headers ועל ה-hash של הגוף (bh=).</li><li>הוא בודק <b>alignment</b>: האם הדומיין שעבר SPF או DKIM תואם לדומיין שב-From: שהמשתמש רואה?</li><li>אם לא, הוא מפעיל את מדיניות ה-DMARC של הדומיין ב-From:, ורושם את התוצאה ב-header של <code>Authentication-Results:</code>.</li></ol></div>
+</section>
+
+<section id="review">
+  <h2><span class="n">10</span>חזרה מהירה למבחן</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>שאלה</th><th>תשובה קצרה</th></tr></thead>
+    <tbody>
+      <tr><td>3 בעיות במייל רגיל?</td><td>תוכן גלוי (בדרך ואצל מנהל השרת), קל להתחזות, אין שלמות.</td></tr>
+      <tr><td>מה אליס שולחת למייל סודי?</td><td>K<sub>S</sub>(m) ו-K<sub>B</sub><sup>+</sup>(K<sub>S</sub>).</td></tr>
+      <tr><td>מה אליס שולחת למייל חתום?</td><td>m גלוי + K<sub>A</sub><sup>−</sup>(H(m)).</td></tr>
+      <tr><td>כמה מפתחות לסודיות + חתימה?</td><td>שלושה: K<sub>A</sub><sup>−</sup>, K<sub>B</sub><sup>+</sup>, K<sub>S</sub>.</td></tr>
+      <tr><td>5 שירותי PGP?</td><td>Authentication, Confidentiality, Compression, Email compatibility, Segmentation. רק שני הראשונים לא שקופים.</td></tr>
+      <tr><td>מתי PGP דוחס ולמה?</td><td>אחרי החתימה (לא לדחוס בכל אימות), לפני ההצפנה (מהירות + פחות יתירות).</td></tr>
+      <tr><td>Radix-64?</td><td>3 בייטים → 4 תווים של 6 ביט, + CRC. ~33% יותר גדול.</td></tr>
+      <tr><td>Key ID?</td><td>64 הביטים התחתונים של המפתח הציבורי.</td></tr>
+      <tr><td>שני ה-Key rings?</td><td>Public (מפתחות של אחרים), Private (שלי, מוצפן ב-Passphrase).</td></tr>
+      <tr><td>PGP מול S/MIME?</td><td>Web of trust מול היררכיית X.509.</td></tr>
+      <tr><td>Signed מול Clear-signed?</td><td>Clear-signed: ההודעה נשארת קריאה גם בלי S/MIME.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src col">מקור: "06 E-mail Security 2015-07.pdf" (35 שקפים). SMTP spoofing, SPF/DKIM/DMARC, EFAIL וההשוואה בין PGP ל-S/MIME הם תוספות שלי.</p>
+</section>

@@ -1,0 +1,449 @@
+<header class="top">
+  <div class="eyebrow">פרק 01</div>
+  <h1>מבוא לאבטחת סייבר</h1>
+  <p class="lead">סיכום ויזואלי של הרצאה 01 (אדריאן שפלר): מה זה בכלל "אבטחה", עקרונות היסוד (CIA, הגנה בשכבות, Least Privilege), איך בונים פרוטוקול אימות ואיך שוברים כל גרסה שלו, מי התוקפים ומה קורה ב-Darknet. בכל נושא: מה ולמה, איך מנצלים את זה לתקיפה, ואיך זה נראה בעולם האמיתי.</p>
+  <nav class="toc" aria-label="תוכן עניינים">
+    <a href="#def">הגדרה</a><a href="#cia">CIA</a><a href="#ppdr">מודל ההגנה</a><a href="#mom">MOM</a><a href="#layers">שכבות</a><a href="#lp">Least Privilege</a><a href="#authn">אימות</a><a href="#ap">ap1.0–ap5.0</a><a href="#hard">למה זה קשה</a><a href="#actors">שחקנים</a><a href="#profiles">פרופילי תוקפים</a><a href="#tor">TOR ו-Darknet</a><a href="#review">חזרה למבחן</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section id="def">
+  <h2><span class="n">1</span>מה זה אבטחת סייבר, ולמה קשה להגדיר אותה</h2>
+  <div class="col">
+  <p>לפי NIST, אבטחת סייבר היא מניעת נזק, הגנה ושחזור של מחשבים, מערכות ושירותי תקשורת והמידע שבהם, כדי להבטיח <b>זמינות, שלמות, אימות, סודיות ואי-התכחשות</b>. הגדרה קצרה יותר: תהליך של הגנה על מידע באמצעות <b>מניעה, זיהוי ותגובה</b> לתקיפות.</p>
+  <p>המטרה הפרקטית כפולה: לאפשר את השימוש המיועד במערכת, ולמנוע שימוש לא מיועד שעלול לגרום נזק. מה מגינים עליו? קבצים ומידע אישי, כספים בבנק, פרטיות, ופרטיות מיקום.</p>
+  <div class="why"><span class="tag">למה אי אפשר למדוד</span>
+    <p>אין "מד אבטחה". אי אפשר לומר באופן מוחלט איזו מערכת הפעלה בטוחה יותר, האם יותר כסף = יותר אבטחה, או האם Open Source בטוח יותר. אבטחה היא תכונה של <b>המערכת כולה מול יריב מסוים</b>, ולא מספר.</p>
+  </div>
+  <h3>דוגמה מההרצאה: ניסיון להכניס Backdoor לקרנל של Linux (2003)</h3>
+<pre>if ((options == (__WCLONE|__WALL)) &amp;&amp; (current-&gt;uid = 0))
+        retval = -EINVAL;</pre>
+  <p>שימו לב ל-<code>=</code> במקום <code>==</code>. זה לא השוואה אלא <b>השמה</b>: אם תהליך קורא ל-<code>wait4()</code> עם צירוף הדגלים הנדיר הזה, ה-<code>uid</code> שלו הופך ל-0, כלומר <b>root</b>. הביטוי עצמו מחזיר 0 (false), אז ה-<code>retval</code> לא משתנה ואף אחד לא שם לב. נראה כמו באג הקלדה תמים, בפועל זו הסלמת הרשאות מלאה.</p>
+  <div class="atk"><span class="tag">ניצול</span>
+    <p>תוקף מקומי מריץ קריאת מערכת אחת עם דגלים "מוזרים" ומקבל root. זה Backdoor שמסתתר כבאג, ולכן קשה לזהות אותו ב-Code Review.</p>
+  </div>
+  <div class="real"><span class="tag">עולם אמיתי</span>
+    <p>הניסיון נתפס כי השינוי הופיע במראה ה-CVS בלי מקור לגיטימי ב-BitKeeper. אותו רעיון בדיוק חזר ב-2024 עם <span class="en">xz-utils</span> (CVE-2024-3094): מתחזק "אמין" שבנה אמון במשך שנתיים והכניס Backdoor ל-sshd דרך ספריית דחיסה. זה הקשר ישיר ל"שרשרת האספקה" שבהמשך.</p>
+    <p class="note">הדוגמה של xz היא תוספת שלי, לא מתוך המצגת.</p>
+  </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="cia">
+  <h2><span class="n">2</span>משולש CIA ושירותי האבטחה</h2>
+  <figure>
+    <svg viewBox="0 0 640 330" width="640" role="img" aria-label="משולש CIA">
+      <polygon points="320,40 90,290 550,290" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="320" cy="200" r="46" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="320" y="206" text-anchor="middle" font-weight="700">DATA</text>
+      <text x="320" y="28" text-anchor="middle" font-weight="700" font-size="17">Confidentiality · סודיות</text>
+      <text x="80" y="315" text-anchor="middle" font-weight="700" font-size="17">Integrity · שלמות</text>
+      <text x="560" y="315" text-anchor="middle" font-weight="700" font-size="17">Availability · זמינות</text>
+      <text x="320" y="110" text-anchor="middle" font-size="13" fill="var(--muted)">מי מורשה לראות?</text>
+      <text x="200" y="250" text-anchor="middle" font-size="13" fill="var(--muted)">שונה בלי רשות?</text>
+      <text x="440" y="250" text-anchor="middle" font-size="13" fill="var(--muted)">נגיש כשצריך?</text>
+    </svg>
+    <figcaption>CIA = מה אנחנו מצפים מהמידע. Authentication ו-Non-repudiation הם שירותים שתומכים בשלושתם.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>תכונה</th><th>מה זה אומר</th><th>דוגמה מההרצאה</th><th>תקיפה שפוגעת בה</th><th>מנגנון הגנה טיפוסי</th></tr></thead>
+    <tbody>
+      <tr><td><b>Confidentiality</b></td><td>מידע נחשף רק למורשים</td><td>פקיד לא יודע את המשכורת שלך</td><td>Sniffing, דליפת DB, MITM</td><td>הצפנה (TLS, AES), Access Control</td></tr>
+      <tr><td><b>Integrity</b></td><td>אי אפשר לשנות מידע בלי הרשאה</td><td>תוקף לא משנה את יתרת החשבון</td><td>MITM ששינה חבילה, SQL Injection, ARP/DNS Poisoning</td><td>Hash, MAC/HMAC, חתימה דיגיטלית</td></tr>
+      <tr><td><b>Availability</b></td><td>שירות נגיש בזמן למורשים</td><td>להתחבר לבנק מתי שרוצים</td><td>DoS/DDoS, Ransomware</td><td>יתירות, CDN, Rate limiting, גיבויים</td></tr>
+      <tr><td><b>Authentication</b></td><td>הוכחה שאתה מי שאתה טוען</td><td>כרטיס בנק + רישיון</td><td>Spoofing, Replay, גניבת סיסמה</td><td>MFA, Challenge-Response</td></tr>
+      <tr><td><b>Non-repudiation</b></td><td>שולח לא יכול להתכחש לפעולה</td><td>חתימה על העברה</td><td>"זה לא אני ששלחתי"</td><td>חתימה דיגיטלית במפתח פרטי + לוגים</td></tr>
+    </tbody>
+  </table></div>
+  <div class="why col"><span class="tag">למה זה חשוב</span>
+    <p>כל תקיפה בקורס תוקפת לפחות אחת מהתכונות. כשמנתחים תקיפה, השאלה הראשונה היא "איזו תכונה נשברה?". למשל Sniffing שובר C, ARP Poisoning שובר I (ולפעמים C), ו-SYN Flood שובר A.</p>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="ppdr">
+  <h2><span class="n">3</span>המודל התפעולי: Protection = Prevention + (Detection + Response)</h2>
+  <figure>
+    <svg viewBox="0 0 720 200" width="720" role="img" aria-label="מניעה זיהוי תגובה">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+      <rect x="500" y="50" width="190" height="90" rx="10" fill="var(--def-soft)" stroke="var(--def)" stroke-width="2"/>
+      <text x="595" y="85" text-anchor="middle" font-weight="700">Prevention · מניעה</text>
+      <text x="595" y="112" text-anchor="middle" font-size="13" fill="var(--muted)">Firewall, הצפנה, ACL, הקשחה</text>
+      <rect x="265" y="50" width="190" height="90" rx="10" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="2"/>
+      <text x="360" y="85" text-anchor="middle" font-weight="700">Detection · זיהוי</text>
+      <text x="360" y="112" text-anchor="middle" font-size="13" fill="var(--muted)">IDS, Audit logs, SIEM</text>
+      <rect x="30" y="50" width="190" height="90" rx="10" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="2"/>
+      <text x="125" y="85" text-anchor="middle" font-weight="700">Response · תגובה</text>
+      <text x="125" y="112" text-anchor="middle" font-size="13" fill="var(--muted)">חסימה, בידוד, שחזור, IR</text>
+      <line x1="498" y1="95" x2="459" y2="95" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="263" y1="95" x2="224" y2="95" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <path d="M125,142 C125,190 595,190 595,144" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="360" y="186" text-anchor="middle" font-size="12" fill="var(--muted)">לקחים מהאירוע משפרים את המניעה</text>
+    </svg>
+    <figcaption>מניעה לבד לא מספיקה: מניחים שמשהו יעבור, ולכן צריך לזהות ולהגיב.</figcaption>
+  </figure>
+  <div class="col">
+  <p><b>למה זה בנוי ככה?</b> מניעה מושלמת לא קיימת (Zero-day, טעות אנוש). לכן המודל מניח <span class="en">"assume breach"</span>: הזמן מרגע החדירה עד הזיהוי (Dwell time) והזמן עד התגובה הם מה שקובע את גודל הנזק.</p>
+  <div class="real"><span class="tag">עולם אמיתי</span><p>NIST CSF מרחיב את זה ל-Identify, Protect, Detect, Respond, Recover. בארגונים: Firewall ו-EDR למניעה, SOC עם SIEM לזיהוי, וצוות IR לתגובה.</p></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="mom">
+  <h2><span class="n">4</span>MOM: מה תוקף צריך כדי להצליח</h2>
+  <div class="grid">
+    <div class="box"><h4>Method · שיטה</h4><p>הידע, הכישורים והכלים לבצע את התקיפה.</p><p class="note">הגנה: הקשחה, עדכונים, הורדת משטח תקיפה.</p></div>
+    <div class="box"><h4>Opportunity · הזדמנות</h4><p>זמן וגישה למערכת: פורט פתוח, עובד שלוחץ על קישור, Wi-Fi פתוח.</p><p class="note">הגנה: Least Privilege, סגמנטציה, ניטור.</p></div>
+    <div class="box"><h4>Motive · מניע</h4><p>כסף, פוליטיקה, ריגול, סקרנות.</p><p class="note">הגנה: הרתעה, אכיפה, להפוך את התקיפה ללא משתלמת.</p></div>
+  </div>
+  <p class="col">ההיגיון: אם מורידים <b>אחד</b> מהשלושה, התקיפה נכשלת. המגן כמעט לא שולט במניע, ולכן רוב ההגנות מכוונות לשיטה ולהזדמנות. מההערות שלך מהשיעור: <b>"בכל תקיפה צריכה להיות מטרה ושיטה"</b>.</p>
+</section>
+
+<!-- 5 -->
+<section id="layers">
+  <h2><span class="n">5</span>גישות לאבטחה, הגנה בשכבות וגיוון הגנות</h2>
+  <div class="grid">
+    <div class="box"><h4>Ignore security</h4><p>מינימום אבטחה, הגדרות "מהקופסה". סיסמאות ברירת מחדל, שירותים פתוחים. זה מה שבוטנטים כמו Mirai אוכלים.</p></div>
+    <div class="box"><h4>Host security</h4><p>כל מחשב מגן על עצמו (AV, Host firewall, עדכונים). משלים, אבל לא סקיילבילי לבד, ומחשב אחד שנשכח שובר הכל.</p></div>
+    <div class="box"><h4>Network security</h4><p>מבט גלובלי, הגנה על כל נקודה ברשת. קשה לנהל כי אין שתי רשתות זהות.</p></div>
+  </div>
+  <h3>Layered Security (Defense in Depth): בנק כדוגמה</h3>
+  <figure>
+    <svg viewBox="0 0 640 340" width="640" role="img" aria-label="שכבות הגנה">
+      <rect x="10" y="10" width="620" height="320" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="320" y="34" text-anchor="middle" font-weight="700">Network security · Firewall (Prevention)</text>
+      <rect x="60" y="48" width="520" height="262" rx="10" fill="var(--surface)" stroke="var(--accent)"/>
+      <text x="320" y="72" text-anchor="middle" font-weight="700">Network security · IDS (Detection)</text>
+      <rect x="110" y="86" width="420" height="204" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="320" y="110" text-anchor="middle" font-weight="700">Host security · Access controls</text>
+      <rect x="160" y="124" width="320" height="146" rx="10" fill="var(--surface)" stroke="var(--accent)"/>
+      <text x="320" y="148" text-anchor="middle" font-weight="700">Host security · Audit logs (Detection)</text>
+      <rect x="230" y="168" width="180" height="80" rx="10" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="2"/>
+      <text x="320" y="204" text-anchor="middle" font-weight="700">Critical data</text>
+      <text x="320" y="226" text-anchor="middle" font-size="13" fill="var(--muted)">DB + ACL</text>
+    </svg>
+    <figcaption>אין Single Point of Failure. השכבה החיצונית רואה את כל התעבורה ולכן בודקת מעט; כל שכבה פנימית בודקת "משהו אחר" ולעומק.</figcaption>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">למה לא לבדוק הכל בשכבה אחת</span><p>ביצועים. Firewall בקצה רואה מיליוני חבילות, ו-Deep inspection לכל אחת יאט את הרשת. לכן מחלקים עבודה: סינון גס בחוץ, בדיקה עמוקה ככל שמתקרבים לנכס.</p></div>
+  <h3>המסלול של תוקף לבסיס הנתונים (מההרצאה)</h3>
+  <ol>
+    <li>לעבור את ה-Firewall החיצוני</li>
+    <li>להשתמש בחבילות ושיטות שה-IDS לא מזהה</li>
+    <li>לעקוף נתב פנימי שמבצע Packet filtering</li>
+    <li>לחדור Firewall פנימי שמפריד בין רשתות פנימיות</li>
+    <li>לשבור את בקרת הגישה של ה-DB (Dictionary / Brute force)</li>
+    <li>למצוא את המידע בתוך ה-DB</li>
+    <li>לעקוף ACL שקובעים מי רואה או משנה כל רשומה</li>
+  </ol>
+  <h3>Diversity of Defence</h3>
+  <p>אם כל השכבות <b>זהות</b>, פריצה של אחת פורצת את כולן. לכן:</p>
+  <ul>
+    <li><b>סינון שונה:</b> Firewall 1 חוסם FTP, SNMP, Telnet. Firewall 2 חוסם SSL, SSH.</li>
+    <li><b>ספקים שונים:</b> Check Point בקו הראשון, Cisco PIX בשני. חולשה במוצר אחד לא קיימת באחר.</li>
+  </ul>
+  <div class="atk"><span class="tag">ניצול</span><p>תוקפים מחפשים את "החוליה האחידה": אם כל השרתים על אותה גרסה, Exploit אחד עובד על כולם (כך התפשטו WannaCry ו-NotPetya דרך SMB). Lateral movement מנצל רשת "שטוחה" בלי שכבות פנימיות.</p></div>
+  <div class="real"><span class="tag">עולם אמיתי</span><p>DMZ בין שני Firewalls, סגמנטציה עם VLAN, WAF מול אפליקציות, EDR על התחנות, MFA על הגישה. מודל Zero Trust הוא ההמשך המודרני: לא סומכים גם על מה שכבר בפנים.</p></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="lp">
+  <h2><span class="n">6</span>Least Privilege ו-Access Control</h2>
+  <div class="col">
+  <p><b>עקרון ההרשאה המינימלית:</b> כל משתמש או תוכנה מקבלים בדיוק את ההרשאות שהם צריכים לתפקיד, ולא יותר. משתמש ניגש לקבצים שלו ולקבצים נבחרים בשרת, וזהו.</p>
+  <p>דוגמה מההרצאה: במחלקת הנה"ח יוצרים קבוצת Accounting, מוסיפים אליה את העובדים, ונותנים הרשאות <b>לקבוצה</b> ולא לאנשים. זה בעצם <b>RBAC</b> (Role-Based Access Control). העקרונות ממומשים בפועל כ"מודל בקרת גישה".</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 680 170" width="680" role="img" aria-label="Subject Object">
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
+      <rect x="500" y="45" width="160" height="80" rx="10" fill="var(--surface)" stroke="var(--ink)"/>
+      <text x="580" y="78" text-anchor="middle" font-weight="700">Subject</text>
+      <text x="580" y="102" text-anchor="middle" font-size="13" fill="var(--muted)">משתמש / תהליך</text>
+      <rect x="260" y="35" width="170" height="100" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="345" y="68" text-anchor="middle" font-weight="700">Access Control</text>
+      <text x="345" y="92" text-anchor="middle" font-size="13" fill="var(--muted)">Model + Mechanism</text>
+      <text x="345" y="114" text-anchor="middle" font-size="12" fill="var(--muted)">read · write · modify · execute</text>
+      <rect x="20" y="45" width="160" height="80" rx="10" fill="var(--surface)" stroke="var(--ink)"/>
+      <text x="100" y="78" text-anchor="middle" font-weight="700">Object</text>
+      <text x="100" y="102" text-anchor="middle" font-size="13" fill="var(--muted)">מידע / תהליך / משאב</text>
+      <line x1="498" y1="85" x2="434" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar2)"/>
+      <line x1="258" y1="85" x2="184" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar2)"/>
+    </svg>
+    <figcaption>Model = השיטה (מי מורשה למה). Mechanism = המימוש (ACL, הרשאות קבצים, Policies).</figcaption>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">Authentication מול Access Control</span>
+    <p><b>Authentication</b> = להוכיח <b>מי</b> אתה. <b>Access control (Authorization)</b> = <b>למה</b> מותר לך לגשת. גם אם הוכחת לבנק שאתה אתה, אין לך גישה לכל החשבונות בבנק.</p>
+  </div>
+  <div class="atk"><span class="tag">ניצול</span><p>כשהעיקרון לא נשמר: שירות שרץ כ-root או כ-SYSTEM, פריצה אליו = שליטה מלאה. עובד עם הרשאות Admin שנופל לפישינג נותן לתוקף את כל הדומיין. Privilege Escalation ו-IDOR (גישה לאובייקט של משתמש אחר רק כי לא בדקו Authorization) הם תקיפות על בקרת הגישה עצמה.</p></div>
+  <div class="real"><span class="tag">עולם אמיתי</span><p>הרשאות קבצים ב-Linux (<code>rwx</code>), קבוצות ב-Active Directory, IAM Policies ב-AWS, <code>sudo</code> במקום להתחבר כ-root, Containers שרצים כ-non-root.</p></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section id="authn">
+  <h2><span class="n">7</span>שלושת גורמי האימות</h2>
+  <div class="grid">
+    <div class="box"><h4>Something you know</h4><p>סיסמה, PIN.</p><p class="note">תקיפות: Brute force, Dictionary, פישינג, Credential stuffing.</p></div>
+    <div class="box"><h4>Something you have</h4><p>תעודה, כרטיס חכם, טלפון עם OTP, מפתח FIDO.</p><p class="note">תקיפות: גניבה, SIM swapping.</p></div>
+    <div class="box"><h4>Something you are</h4><p>ביומטריה: טביעת אצבע, פנים.</p><p class="note">בעיה: אי אפשר "להחליף" אצבע שדלפה.</p></div>
+  </div>
+  <p class="col">אימות בנוי משני שלבים: <b>"מי אתה"</b> (User ID) ואז <b>"תוכיח"</b> (סיסמה). שילוב של שני גורמים <b>מסוגים שונים</b> הוא MFA. שתי סיסמאות הן עדיין גורם אחד.</p>
+</section>
+
+<!-- 8 -->
+<section id="ap">
+  <h2><span class="n">8</span>בונים פרוטוקול אימות: ap1.0 עד ap5.0</h2>
+  <p class="col">המטרה: בוב רוצה שאליס תוכיח לו את זהותה ברשת, שבה הוא לא "רואה" אותה. טרודי היא התוקפת. כל גרסה מתקנת את החולשה הקודמת, ונשברת בדרך חדשה.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>גרסה</th><th>מה אליס שולחת</th><th>איך טרודי שוברת</th><th>הלקח</th></tr></thead>
+    <tbody>
+      <tr><td><b>ap1.0</b></td><td>"I am Alice"</td><td>פשוט אומרת "I am Alice"</td><td>טענה אינה הוכחה</td></tr>
+      <tr><td><b>ap2.0</b></td><td>"I am Alice" + IP המקור של אליס</td><td><b>IP Spoofing</b>: מזייפת את כתובת המקור בחבילה</td><td>שדות Header נשלטים בידי השולח</td></tr>
+      <tr><td><b>ap3.0</b></td><td>"I am Alice" + סיסמה</td><td><b>Replay</b>: מקליטה (Sniff) ושולחת שוב. וגם קוראת את הסיסמה בטקסט גלוי</td><td>סוד סטטי שעובר ברשת נגנב</td></tr>
+      <tr><td><b>ap3.1</b></td><td>"I am Alice" + סיסמה <b>מוצפנת</b></td><td><b>Replay</b> עדיין עובד: לא צריך לפענח, רק לשדר שוב את אותם ביטים</td><td>הצפנה לבד לא מונעת Replay</td></tr>
+      <tr><td><b>ap4.0</b></td><td>בוב שולח Nonce R, אליס מחזירה <span class="en">K<sub>A-B</sub>(R)</span></td><td>Replay נכשל כי R חדש בכל פעם. החיסרון: צריך מפתח סימטרי משותף מראש</td><td><b>Nonce</b> = הוכחת "חיות"</td></tr>
+      <tr><td><b>ap5.0</b></td><td>Nonce + מפתח ציבורי: אליס מחזירה <span class="en">K<sub>A</sub><sup>−</sup>(R)</span>, בוב מבקש <span class="en">K<sub>A</sub><sup>+</sup></span> ובודק</td><td><b>Man-in-the-Middle</b>: טרודי מחליפה את המפתח הציבורי בשלה</td><td>צריך דרך <b>מהימנה</b> לקשר מפתח ציבורי לזהות</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Replay attack (ap3.0 / ap3.1)</h3>
+  <figure>
+    <svg viewBox="0 0 640 260" width="640" role="img" aria-label="Replay">
+      <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="context-stroke"/></marker></defs>
+      <text x="560" y="24" text-anchor="middle" font-weight="700">Alice</text><line x1="560" y1="34" x2="560" y2="250" stroke="var(--line)" stroke-width="2"/>
+      <text x="320" y="24" text-anchor="middle" font-weight="700" fill="var(--atk)">Trudy</text><line x1="320" y1="34" x2="320" y2="250" stroke="var(--atk)" stroke-dasharray="4 4"/>
+      <text x="80" y="24" text-anchor="middle" font-weight="700">Bob</text><line x1="80" y1="34" x2="80" y2="250" stroke="var(--line)" stroke-width="2"/>
+      <line x1="555" y1="70" x2="86" y2="70" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/>
+      <text x="320" y="62" text-anchor="middle" font-size="13">"I'm Alice" + password (encrypted)</text>
+      <circle cx="320" cy="70" r="6" fill="var(--atk)"/><text x="340" y="92" font-size="12" fill="var(--atk)" text-anchor="start">מקליטה</text>
+      <line x1="86" y1="110" x2="555" y2="110" stroke="var(--def)" stroke-width="2" marker-end="url(#a3)"/>
+      <text x="320" y="104" text-anchor="middle" font-size="13" fill="var(--def)">OK</text>
+      <text x="320" y="150" text-anchor="middle" font-size="12" fill="var(--muted)">... מאוחר יותר ...</text>
+      <line x1="315" y1="195" x2="86" y2="195" stroke="var(--atk)" stroke-width="2" marker-end="url(#a3)"/>
+      <text x="200" y="187" text-anchor="middle" font-size="13" fill="var(--atk)">אותם ביטים בדיוק</text>
+      <line x1="86" y1="230" x2="315" y2="230" stroke="var(--def)" stroke-width="2" marker-end="url(#a3)"/>
+      <text x="200" y="224" text-anchor="middle" font-size="13" fill="var(--def)">OK  ← בוב בטוח שזו אליס</text>
+    </svg>
+    <figcaption>טרודי לא צריכה לדעת את הסיסמה. מספיק שההוכחה זהה בכל פעם.</figcaption>
+  </figure>
+
+  <h3>Challenge-Response עם Nonce (ap4.0)</h3>
+  <figure>
+    <svg viewBox="0 0 640 210" width="640" role="img" aria-label="Nonce">
+      <text x="540" y="24" text-anchor="middle" font-weight="700">Alice</text><line x1="540" y1="34" x2="540" y2="200" stroke="var(--line)" stroke-width="2"/>
+      <text x="100" y="24" text-anchor="middle" font-weight="700">Bob</text><line x1="100" y1="34" x2="100" y2="200" stroke="var(--line)" stroke-width="2"/>
+      <line x1="535" y1="65" x2="106" y2="65" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/><text x="320" y="57" text-anchor="middle" font-size="13">"I am Alice"</text>
+      <line x1="106" y1="115" x2="535" y2="115" stroke="var(--accent)" stroke-width="2" marker-end="url(#a3)"/><text x="320" y="107" text-anchor="middle" font-size="13" fill="var(--accent)">R  (nonce אקראי, פעם אחת בחיים)</text>
+      <line x1="535" y1="165" x2="106" y2="165" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/><text x="320" y="157" text-anchor="middle" font-size="13" class="mono">K_A-B(R)</text>
+      <text x="320" y="200" text-anchor="middle" font-size="12" fill="var(--def)">רק אליס יודעת את המפתח ⇒ זו אליס, והיא "חיה"</text>
+    </svg>
+  </figure>
+
+  <h3>Man-in-the-Middle על ap5.0</h3>
+  <figure>
+    <svg viewBox="0 0 680 400" width="680" role="img" aria-label="MITM">
+      <text x="600" y="24" text-anchor="middle" font-weight="700">Alice</text><line x1="600" y1="34" x2="600" y2="390" stroke="var(--line)" stroke-width="2"/>
+      <text x="340" y="24" text-anchor="middle" font-weight="700" fill="var(--atk)">Trudy</text><line x1="340" y1="34" x2="340" y2="390" stroke="var(--atk)" stroke-width="2"/>
+      <text x="80" y="24" text-anchor="middle" font-weight="700">Bob</text><line x1="80" y1="34" x2="80" y2="390" stroke="var(--line)" stroke-width="2"/>
+      <line x1="335" y1="60" x2="86" y2="60" stroke="var(--atk)" stroke-width="2" marker-end="url(#a3)"/><text x="210" y="52" text-anchor="middle" font-size="13">I am Alice</text>
+      <line x1="86" y1="95" x2="335" y2="95" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/><text x="210" y="87" text-anchor="middle" font-size="13">R</text>
+      <line x1="345" y1="95" x2="595" y2="95" stroke="var(--atk)" stroke-width="2" marker-end="url(#a3)"/><text x="470" y="87" text-anchor="middle" font-size="13">R</text>
+      <line x1="595" y1="130" x2="345" y2="130" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/><text x="470" y="122" text-anchor="middle" font-size="13" class="mono">K_A⁻(R)</text>
+      <line x1="335" y1="165" x2="86" y2="165" stroke="var(--atk)" stroke-width="2" marker-end="url(#a3)"/><text x="210" y="157" text-anchor="middle" font-size="13" class="mono">K_T⁻(R)</text>
+      <line x1="86" y1="200" x2="335" y2="200" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/><text x="210" y="192" text-anchor="middle" font-size="13">Send me your public key</text>
+      <line x1="335" y1="235" x2="86" y2="235" stroke="var(--atk)" stroke-width="2" marker-end="url(#a3)"/><text x="210" y="227" text-anchor="middle" font-size="13" fill="var(--atk)" direction="ltr">K_T⁺ (Trudy's key!)</text>
+      <line x1="345" y1="235" x2="595" y2="235" stroke="var(--atk)" stroke-width="2" marker-end="url(#a3)"/><text x="470" y="227" text-anchor="middle" font-size="13">Send me your public key</text>
+      <line x1="595" y1="270" x2="345" y2="270" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/><text x="470" y="262" text-anchor="middle" font-size="13" class="mono">K_A⁺</text>
+      <line x1="86" y1="315" x2="335" y2="315" stroke="var(--ink)" stroke-width="2" marker-end="url(#a3)"/><text x="210" y="307" text-anchor="middle" font-size="13" class="mono">K_T⁺(m)</text>
+      <text x="340" y="340" text-anchor="middle" font-size="12" fill="var(--atk)">m = K_T⁻(K_T⁺(m))  ← קוראת</text>
+      <line x1="345" y1="365" x2="595" y2="365" stroke="var(--atk)" stroke-width="2" marker-end="url(#a3)"/><text x="470" y="357" text-anchor="middle" font-size="13" class="mono">K_A⁺(m)</text>
+    </svg>
+    <figcaption>טרודי מתחזה לאליס מול בוב ולבוב מול אליס. שני הצדדים מקבלים הכל, ולכן לא מרגישים כלום, אבל טרודי קוראת (ויכולה לשנות) כל הודעה.</figcaption>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">איפה הבעיה האמיתית</span><p>המתמטיקה של RSA תקינה. הבעיה היא ש<b>בוב ביקש את המפתח הציבורי דרך אותו ערוץ שהתוקף שולט בו</b>. בלי דרך לאמת ש-<span class="en">K<sup>+</sup></span> באמת שייך לאליס, כל הפרוטוקול נופל.</p></div>
+  <div class="def"><span class="tag">הפתרון</span><p><b>Certificate Authority (PKI)</b>: צד שלישי מהימן חותם על הקשר "המפתח הזה שייך לאליס". זה בדיוק מה שקורה ב-HTTPS: הדפדפן בודק שתעודת השרת חתומה ע"י CA שהוא סומך עליו. נרחיב בפרק ההצפנה האסימטרית.</p></div>
+  <div class="atk"><span class="tag">ניצול בעולם האמיתי</span>
+    <ul>
+      <li><b>Replay:</b> תקיפות על מפתחות רכב (RollJam), Replay של Cookies/Tokens אם אין תוקף קצר, KRACK על WPA2 (שידור חוזר של הודעה 3 ב-Handshake גורם לשימוש חוזר ב-Nonce).</li>
+      <li><b>IP Spoofing:</b> בסיס ל-DDoS Reflection/Amplification ול-SYN Flood (פרק 05).</li>
+      <li><b>MITM:</b> ARP Poisoning ו-DNS Spoofing ברשת מקומית (פרק 04), Evil-Twin Wi-Fi, SSL Stripping, תעודה מזויפת (DigiNotar 2011).</li>
+    </ul>
+  </div>
+  <div class="real"><span class="tag">איפה רואים Challenge-Response</span><p>Kerberos ו-NTLM ב-Windows, WPA2 4-way handshake (ANonce/SNonce), SSH (המפתח הציבורי של השרת נבדק מול <code>known_hosts</code>, כלומר TOFU במקום CA), ו-TLS (Client/Server Random הם Nonces).</p></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="hard">
+  <h2><span class="n">9</span>מחיר האבטחה, ולמה זה כל כך קשה</h2>
+  <div class="col">
+  <p><b>אין אבטחה בחינם:</b> פיתוח יקר, תקורת ביצועים, ואי-נוחות למשתמשים. אף אחד לא רוצה לשלם על אבטחה יותר ממה שיש לו להפסיד, ולכן המטרה היא לא אבטחה מושלמת אלא <b>Risk Analysis</b>: סיכון ≈ הסתברות × נזק, ומשקיעים בהתאם.</p>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>יריב פעיל וזדוני</h4><p>הופך באגים ל-Exploits, מסתגל להגנות, מחכה לטעות, ותוקף את העובדים כשהמערכות מאובטחות. המגן צריך לסגור הכל, לתוקף מספיק חור אחד.</p></div>
+    <div class="box"><h4>שרשרת האספקה</h4><p>אפליקציה בטלפון תלויה במפתחים, ב-SDKs, ב-Open source, במערכת ההפעלה, ב-CPU ובספק הסלולר. כל חוליה היא וקטור. דוגמאות: SolarWinds 2020, xz 2024.</p></div>
+    <div class="box"><h4>יש פתרונות, לא משתמשים בהם</h4><p>אנשים מתקינים Flash "כי האתר ביקש", אתרים שמשתמשים ב-SSL רק בדף ההתחברות. היום זה השתפר (HTTPS בכל מקום, HSTS), אבל התבנית חוזרת.</p></div>
+    <div class="box"><h4>זו בעיית תהליך</h4><p>אבטחה נוגעת בכל ה-IT וה-HR של הארגון. דוגמה: Microsoft SDL, שמשלב אבטחה בכל שלב בפיתוח (Threat modeling, Code review, Fuzzing).</p></div>
+    <div class="box"><h4>גורמים כלכליים</h4><p>אין תמריץ לתוכנה מאובטחת, ואבטחה יקרה ואיטית. Time-to-market מנצח.</p></div>
+    <div class="box"><h4>גורמים אנושיים</h4><p>מהנדסים בלי הכשרת אבטחה, ומשתמשים לא מודעים. דוגמה: "הנסיך הניגרי" (Advance-fee scam), הנדסה חברתית שעובדת כבר עשרות שנים.</p></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section id="actors">
+  <h2><span class="n">10</span>השחקנים: Alice, Bob ומי שבאמצע</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>שם</th><th>תפקיד</th><th>יכולות</th></tr></thead>
+    <tbody>
+      <tr><td>Alice, Bob</td><td>הצדדים הלגיטימיים</td><td>רוצים לתקשר בבטחה</td></tr>
+      <tr><td>Eve (Eavesdropper)</td><td>תוקף <b>פסיבי</b></td><td>רק מאזינה. שוברת Confidentiality</td></tr>
+      <tr><td>Trudy / Mallory</td><td>תוקף <b>אקטיבי</b> On-path (MITM)</td><td>רואה, משנה, חוסמת ומזריקה. שוברת C, I, ואימות</td></tr>
+      <tr><td>Oscar</td><td>תוקף <b>Off-path</b></td><td>לא רואה ולא חוסם תעבורה, אבל יכול לשלוח חבילות מזויפות</td></tr>
+    </tbody>
+  </table></div>
+  <figure>
+    <svg viewBox="0 0 680 270" width="680" role="img" aria-label="On-path vs Off-path">
+      <defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="context-stroke"/></marker></defs>
+      <rect x="540" y="90" width="120" height="56" rx="10" fill="var(--surface)" stroke="var(--ink)"/><text x="600" y="123" text-anchor="middle" font-weight="700">Alice</text>
+      <rect x="20" y="90" width="140" height="56" rx="10" fill="var(--surface)" stroke="var(--ink)"/><text x="90" y="116" text-anchor="middle" font-weight="700">DNS Resolver</text><text x="90" y="135" text-anchor="middle" font-size="11" fill="var(--muted)">/ Bob</text>
+      <line x1="538" y1="110" x2="164" y2="110" stroke="var(--ink)" stroke-width="2" marker-end="url(#a4)"/><text x="350" y="102" text-anchor="middle" font-size="12">query: bob.com?  TXID=0x3a7f</text>
+      <line x1="164" y1="130" x2="538" y2="130" stroke="var(--def)" stroke-width="2" marker-end="url(#a4)"/><text x="350" y="148" text-anchor="middle" font-size="12" fill="var(--def)">answer: 1.2.3.4  TXID=0x3a7f</text>
+      <rect x="290" y="200" width="120" height="50" rx="10" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="2"/><text x="350" y="231" text-anchor="middle" font-weight="700" fill="var(--atk)">Oscar</text>
+      <path d="M410,215 C480,200 520,170 548,148" fill="none" stroke="var(--atk)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a4)"/>
+      <text x="520" y="215" text-anchor="middle" font-size="12" fill="var(--atk)">מנחש TXID ומשלים</text>
+      <text x="520" y="232" text-anchor="middle" font-size="12" fill="var(--atk)">תשובה מזויפת: 6.6.6.6</text>
+      <text x="350" y="40" text-anchor="middle" font-size="13" fill="var(--muted)">On-path (Trudy) יושבת על הקו. Off-path (Oscar) מחוץ לו ויורה "בעיוורון"</text>
+    </svg>
+    <figcaption>הדוגמה מההרצאה: Oscar מנסה להקדים את תשובת ה-Resolver עם תשובה מזויפת, כך שאליס תגיע לשרת שלו במקום לבוב.</figcaption>
+  </figure>
+  <div class="col">
+  <div class="def"><span class="tag">הגנה</span><p>מזהה אקראי ("עוגיה") שחייב לחזור בתשובה. ב-DNS זה ה-<b>Transaction ID</b> (16 ביט) יחד עם <b>פורט מקור אקראי</b>. Off-path לא רואה אותם, ולכן חייב לנחש. תשובה עם מזהה לא נכון נזרקת.</p></div>
+  <div class="real"><span class="tag">עולם אמיתי</span><p>16 ביט = 65,536 אפשרויות, וזה לא הספיק: <b>Kaminsky (2008)</b> הראה שאפשר לנסות שוב ושוב עם תת-דומיינים אקראיים ולהרעיל את ה-Cache. התיקון: אקראיות של פורט המקור (בערך 2<sup>16</sup> × 2<sup>16</sup> ≈ 4 מיליארד צירופים), ובטווח הארוך DNSSEC שחותם על התשובות. TCP משתמש באותו רעיון עם Initial Sequence Number אקראי.</p></div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="profiles">
+  <h2><span class="n">11</span>מי התוקפים</h2>
+  <div class="grid">
+    <div class="box"><h4>Hackers</h4><p>מניע: פוליטיקה, מודיעין (מדינות), ריגול סייבר.</p></div>
+    <div class="box"><h4>Crackers</h4><p>מניע: כסף. פשיעה מאורגנת, Ransomware.</p></div>
+    <div class="box"><h4>Script kiddies</h4><p>"כסף קטן" וסקרנות. משתמשים בכלים מוכנים בלי להבין אותם לעומק.</p></div>
+  </div>
+  <div class="col">
+  <p><b>הפרופיל המודרני:</b> לא "גאון מחשבים צעיר". גילאי 12 עד 60, כל מגדר, רקע לא ידוע, רמות מיומנות שונות, ויכול להיות <b>מבפנים</b> (Insider) או מבחוץ.</p>
+  <h3>שחקנים מדינתיים</h3>
+  <ul>
+    <li><b>State actors:</b> מדינות שמבצעות פעולות סייבר בעצמן (רוסיה, סין, ארה"ב, ישראל, איראן ועוד).</li>
+    <li><b>State-sponsored:</b> גורמים לא-מדינתיים שמדינה מפעילה או מממנת (Proxy). נותן למדינה הכחשה.</li>
+    <li><b>Non-state / Hacktivists:</b> פשיעת סייבר או "האקינג פטריוטי", למשל Anonymous.</li>
+  </ul>
+  <div class="real"><span class="tag">דוגמה מההרצאה</span><p><b>אסטוניה 2007:</b> בעקבות סכסוך על הזזת פסל חייל סובייטי, כשלושה שבועות של DDoS שיתקו בנקים, ממשלה ותקשורת. מיוחס לרוסיה. זה אחד המקרים הראשונים שבהם מדינה שלמה הותקפה בסייבר, ובעקבותיו הוקם מרכז ה-CCDCOE של נאט"ו בטאלין.</p></div>
+  <h3>למה האיום גדל</h3>
+  <p>מובייל, רשתות חברתיות, מערכות משובצות (IoT), גידול אקספוננציאלי באירועים, תוכנה מורכבת ותקיפות ממוקדות, טכנולוגיות אחידות (חולשה אחת פוגעת במיליונים), וסריקה ומיפוי בלתי פוסקים של רשתות (נראה בפרק 03).</p>
+  </div>
+</section>
+
+<!-- 12 -->
+<section id="tor">
+  <h2><span class="n">12</span>אנונימיות, TOR והשוק השחור</h2>
+  <h3>Onion Routing: איך TOR עובד</h3>
+  <figure>
+    <svg viewBox="0 0 720 260" width="720" role="img" aria-label="TOR">
+      <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="context-stroke"/></marker></defs>
+      <rect x="610" y="100" width="95" height="56" rx="10" fill="var(--surface)" stroke="var(--ink)"/><text x="657" y="125" text-anchor="middle" font-weight="700">Alice</text><text x="657" y="143" text-anchor="middle" font-size="11" fill="var(--muted)">Tor Browser</text>
+      <circle cx="510" cy="128" r="34" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="510" y="125" text-anchor="middle" font-weight="700" font-size="13">Guard</text><text x="510" y="142" text-anchor="middle" font-size="11" fill="var(--muted)">Entry</text>
+      <circle cx="370" cy="128" r="34" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="370" y="132" text-anchor="middle" font-weight="700" font-size="13">Middle</text>
+      <circle cx="230" cy="128" r="34" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="230" y="132" text-anchor="middle" font-weight="700" font-size="13">Exit</text>
+      <rect x="15" y="100" width="110" height="56" rx="10" fill="var(--surface)" stroke="var(--ink)"/><text x="70" y="133" text-anchor="middle" font-weight="700">Server</text>
+      <line x1="608" y1="128" x2="548" y2="128" stroke="var(--ink)" stroke-width="2" marker-end="url(#a5)"/>
+      <line x1="474" y1="128" x2="408" y2="128" stroke="var(--ink)" stroke-width="2" marker-end="url(#a5)"/>
+      <line x1="334" y1="128" x2="268" y2="128" stroke="var(--ink)" stroke-width="2" marker-end="url(#a5)"/>
+      <line x1="194" y1="128" x2="129" y2="128" stroke="var(--warn)" stroke-width="2" marker-end="url(#a5)"/>
+      <g font-size="11">
+        <rect x="560" y="30" width="20" height="40" rx="3" fill="none" stroke="var(--atk)" stroke-width="2"/>
+        <rect x="565" y="35" width="10" height="30" rx="2" fill="none" stroke="var(--warn)" stroke-width="2"/>
+        <rect x="568" y="40" width="4" height="20" fill="var(--def)"/>
+        <text x="580" y="85" text-anchor="middle">3 שכבות</text>
+        <rect x="430" y="35" width="10" height="30" rx="2" fill="none" stroke="var(--warn)" stroke-width="2"/><rect x="433" y="40" width="4" height="20" fill="var(--def)"/><text x="435" y="85" text-anchor="middle">2</text>
+        <rect x="298" y="40" width="4" height="20" fill="var(--def)"/><text x="300" y="85" text-anchor="middle">1</text>
+        <text x="162" y="85" text-anchor="middle">גלוי (אם אין HTTPS)</text>
+      </g>
+      <text x="510" y="190" text-anchor="middle" font-size="12" fill="var(--muted)">יודע: מי אליס</text><text x="510" y="206" text-anchor="middle" font-size="12" fill="var(--muted)">לא יודע: יעד</text>
+      <text x="370" y="190" text-anchor="middle" font-size="12" fill="var(--muted)">לא יודע</text><text x="370" y="206" text-anchor="middle" font-size="12" fill="var(--muted)">לא מקור ולא יעד</text>
+      <text x="230" y="190" text-anchor="middle" font-size="12" fill="var(--muted)">יודע: יעד</text><text x="230" y="206" text-anchor="middle" font-size="12" fill="var(--muted)">לא יודע: מי אליס</text>
+    </svg>
+    <figcaption>אליס מצפינה 3 פעמים (מפתח לכל Relay). כל צומת מקלף שכבה אחת ורואה רק את השכן הקודם והבא. המסלול מתחלף מדי פעם.</figcaption>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">למה שלושה צמתים</span><p>אף צומת יחיד לא מכיר גם את המקור וגם את היעד. כדי לחשוף את אליס צריך לשלוט ב-Guard <b>וגם</b> ב-Exit באותו מעגל (או לצפות בשני קצוות הרשת).</p></div>
+  <div class="atk"><span class="tag">חולשות ותקיפות</span>
+    <ul>
+      <li><b>Exit node זדוני:</b> רואה תעבורה בטקסט גלוי אם האתר לא ב-HTTPS. יכול לרחרח סיסמאות או לבצע SSL Stripping.</li>
+      <li><b>Traffic correlation:</b> יריב שרואה את כניסת התעבורה ואת יציאתה מתאם תזמונים וגדלים.</li>
+      <li><b>תקיפה על הקצה:</b> Exploit בדפדפן שגורם למחשב לפנות ישירות לשרת ולחשוף IP אמיתי. כך ה-FBI זיהה משתמשים ב-Operation Playpen (2015) עם NIT, וזה בדיוק "Malware distribution" שבשקף על מעקב אחר עבריינים.</li>
+      <li><b>OPSEC של המשתמש:</b> Ross Ulbricht (Silk Road, 2013) נתפס בגלל פוסט ישן עם המייל האישי שלו, לא בגלל שבירת TOR.</li>
+    </ul>
+  </div>
+  <p>הערה: ההרצאה אומרת ש-TOR "לא ניתן למעקב". בפועל הוא מספק אנונימיות חזקה מול רוב היריבים, אבל לא מול יריב גלובלי או משתמש שטועה. מנועי חיפוש רגילים לא מאנדקסים אתרי <code>.onion</code>.</p>
+  <h3>Deep Web מול Darknet</h3>
+  <p><b>Deep web</b> = כל מה שלא מאונדקס (מייל, בנק, מערכות פנימיות). <b>Darknet</b> = רשתות שדורשות תוכנה מיוחדת כמו TOR. לפי ההרצאה, שם מתנהלת התעבורה של עולם הפשע: מערכות מייל, מסרים מיידיים ורשתות חברתיות, וגם ארגוני טרור ואקטיביזם שמעדיפים אותו בגלל אכיפת החוק. ה-Hidden Wiki הוא "אינדקס" של אתרי onion, כולל מכירת 0-day exploits.</p>
+  <h3>מחירון מחתרתי (מההרצאה)</h3>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>מוצר / שירות</th><th>מחיר</th></tr></thead>
+    <tbody>
+      <tr><td>חשבונות בנק</td><td class="num">$10–1000</td></tr>
+      <tr><td>כרטיסי אשראי</td><td class="num">$0.40–20</td></tr>
+      <tr><td>זהות מלאה</td><td class="num">$1–15</td></tr>
+      <tr><td>חשבונות באתרי מכירות</td><td class="num">$1–8</td></tr>
+      <tr><td>הונאות (אחסון / עיצוב)</td><td class="num">$2.50–50/wk · $25</td></tr>
+      <tr><td>Mailers</td><td class="num">$1–10</td></tr>
+      <tr><td>כתובות מייל</td><td class="num">$0.83–10/MB</td></tr>
+      <tr><td>סיסמאות מייל</td><td class="num">$4–30</td></tr>
+      <tr><td>Drop (העברת כסף)</td><td class="num">10–50% of amount</td></tr>
+      <tr><td>Proxies</td><td class="num">$1.50–30</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <h3>תשלום אנונימי</h3>
+  <p>כרטיס אשראי ו-PayPal מתאימים רק אם הם גנובים. מזומן לא נוח. לכן: <b>Bitcoin</b> ו-<b>Liberty Reserve</b> (קוסטה ריקה, נסגר ע"י ארה"ב ב-2013). הערה: Bitcoin הוא <b>פסאודונימי</b> ולא אנונימי, כל העסקאות ב-Blockchain ציבורי, ורשויות עוקבות אחריהן (Chainalysis). לכן עברו ל-Monero ולמיקסרים.</p>
+  <h3>איך רשויות מתמודדות</h3>
+  <ul>
+    <li><b>הפצת Malware</b> כדי לעקוב אחרי תעבורה ל-Darknet (למשל Anonymous שהפיצו אפליקציית TOR נגועה כדי לאתר פדופילים).</li>
+    <li><b>פיתיונות (Decoys)</b> לריגול: מסמך זדוני שהיעד מוריד ופותח.</li>
+    <li><b>מודיעין לפני האירוע</b>, בניגוד לחקירה הקלאסית שמתחילה אחרי הפשע. חיפוש אנומליות במידע זמין (קשור ל-OSINT בפרק 02).</li>
+    <li><b>סוכנים סמויים</b> שמשתלבים בקהילה ותופסים את היעדים בזמן הפשע.</li>
+  </ul>
+  </div>
+</section>
+
+<!-- 13 -->
+<section id="review">
+  <h2><span class="n">13</span>חזרה מהירה למבחן</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>שאלה</th><th>תשובה קצרה</th></tr></thead>
+    <tbody>
+      <tr><td>מה ההבדל בין Authentication ל-Access Control?</td><td>אימות = מי אתה. בקרת גישה = למה מותר לך לגשת.</td></tr>
+      <tr><td>למה הצפנת הסיסמה (ap3.1) לא מספיקה?</td><td>Replay: התוקף משדר שוב את אותם ביטים מוצפנים בלי לפענח.</td></tr>
+      <tr><td>מה זה Nonce ומה הוא פותר?</td><td>מספר חד-פעמי מהשרת. מוכיח "חיות" ומונע Replay.</td></tr>
+      <tr><td>מה החולשה של ap5.0?</td><td>MITM: אין אימות שהמפתח הציבורי שייך לאליס. פתרון: CA / PKI.</td></tr>
+      <tr><td>מה ההבדל בין Layered defense ל-Diversity of defense?</td><td>שכבות = כמה קווי הגנה. גיוון = שהקווים שונים (סוג סינון / ספק), כדי שפריצה אחת לא תפרוץ את כולם.</td></tr>
+      <tr><td>MOM?</td><td>Method, Opportunity, Motive. בלי אחד מהם אין תקיפה מוצלחת.</td></tr>
+      <tr><td>Protection = ?</td><td>Prevention + (Detection + Response).</td></tr>
+      <tr><td>On-path מול Off-path?</td><td>On-path רואה ומשנה תעבורה. Off-path רק שולח חבילות מזויפות, ולכן נעצר ע"י מזהה אקראי שהוא לא רואה.</td></tr>
+      <tr><td>מה היה הבאג ב-Backdoor של Linux 2003?</td><td><code>uid = 0</code> (השמה) במקום <code>==</code>, נותן root לקורא.</td></tr>
+      <tr><td>למה TOR משתמש ב-3 צמתים?</td><td>אף צומת לא יודע גם מקור וגם יעד.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <h3>רקע שכדאי לחזור עליו (מההערות שלך משיעור 1)</h3>
+  <p>מודל 5 השכבות, ARP, IP, ICMP, TCP/UDP, DHCP, DNS, Cookies, SMTP: שדות ה-Header של כל אחד ומשמעות כל ערך, Encapsulation/Decapsulation, וההבדל בין Repeater, Hub, Switch ו-Router. כל תקיפות הרשת בפרקים 03–05 מנצלות בדיוק את השדות האלה.</p>
+  <p class="src">מקור: "01 HIT 2015-07 Intro to Cyber Security.pdf" (88 שקפים). סרטונים מומלצים מהתיקייה: <a href="https://www.youtube.com/watch?v=_393maHbHWc">How to be anonymous on the web</a>, <a href="https://www.youtube.com/watch?v=LAcGiLL4OZU">How TOR works</a>. דוגמאות שמסומנות "עולם אמיתי" שלא הופיעו בשקפים הן תוספות שלי להבנה.</p>
+  </div>
+</section>

@@ -1,0 +1,314 @@
+<header class="top">
+  <div class="eyebrow">פרק 03</div>
+  <h1>סריקות רשת</h1>
+  <p class="lead">איך תוקף ממפה רשת: מי חי (Ping sweep, ARP), אילו פורטים פתוחים (Connect, SYN, FIN, Xmas, Null, UDP, Idle), איך נשאר אנונימי, ואיך מזהים מערכת הפעלה באופן אקטיבי ופסיבי. ובצד השני: איך מזהים וחוסמים סריקות (Snort, ACL, הקטנת משטח תקיפה).</p>
+  <nav class="toc" aria-label="תוכן עניינים">
+    <a href="#goals">מטרות</a><a href="#ports">פורטים ומצבים</a><a href="#alive">מי חי</a><a href="#icmp-atk">Smurf ו-Ping</a><a href="#tcp">סריקות TCP</a><a href="#anon">סריקה אנונימית</a><a href="#idle">Idle scan</a><a href="#udp">UDP</a><a href="#detect">זיהוי ומניעה</a><a href="#os">זיהוי OS</a><a href="#review">חזרה</a>
+  </nav>
+</header>
+
+<section id="goals">
+  <h2><span class="n">1</span>מטרות הסריקה ותזכורת לדגלי TCP</h2>
+  <div class="grid">
+    <div class="box"><h4>Map · למפות</h4><p>כתובות IP חיות, מסכות רשת (Subnets).</p></div>
+    <div class="box"><h4>Identify · לזהות</h4><p>רכיבי רשת, מערכות הפעלה, אפליקציות ושירותים, רמת עדכונים (Patch level).</p></div>
+  </div>
+  <figure>
+    <svg viewBox="0 0 700 150" width="700" role="img" aria-label="TCP flags">
+      <text x="350" y="20" text-anchor="middle" font-size="13" fill="var(--muted)">שדה הדגלים ב-TCP header (6 הדגלים הקלאסיים)</text>
+      <g font-size="14" font-weight="700" direction="ltr">
+        <rect x="50" y="35" width="100" height="44" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="100" y="63" text-anchor="middle">URG</text>
+        <rect x="150" y="35" width="100" height="44" fill="var(--surface)" stroke="var(--line)"/><text x="200" y="63" text-anchor="middle">ACK</text>
+        <rect x="250" y="35" width="100" height="44" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="300" y="63" text-anchor="middle">PSH</text>
+        <rect x="350" y="35" width="100" height="44" fill="var(--surface)" stroke="var(--line)"/><text x="400" y="63" text-anchor="middle">RST</text>
+        <rect x="450" y="35" width="100" height="44" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="500" y="63" text-anchor="middle">SYN</text>
+        <rect x="550" y="35" width="100" height="44" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="600" y="63" text-anchor="middle">FIN</text>
+      </g>
+      <g font-size="12" fill="var(--muted)">
+        <text x="100" y="100" text-anchor="middle">דחוף</text><text x="200" y="100" text-anchor="middle">אישור קבלה</text><text x="300" y="100" text-anchor="middle">העבר מיד לאפליקציה</text><text x="400" y="100" text-anchor="middle">ניתוק מיידי / סגור</text><text x="500" y="100" text-anchor="middle">פתיחת חיבור</text><text x="600" y="100" text-anchor="middle">סיום מסודר</text>
+      </g>
+      <text x="350" y="135" text-anchor="middle" font-size="12">Xmas = FIN+PSH+URG דולקים ("מואר כמו עץ חג המולד") · Null = כולם כבויים</text>
+    </svg>
+  </figure>
+</section>
+
+<section id="ports">
+  <h2><span class="n">2</span>פורטים ומצב של פורט</h2>
+  <div class="col">
+  <p>פורט הוא הפשטה של "מערכת הפעלה + שירות". מספר של 16 ביט בכותרת TCP ו-UDP. מרחבי TCP ו-UDP <b>נפרדים</b>, אבל נהוג להשתמש באותו מספר לשניהם (80/tcp ו-80/udp ל-www).</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>טווח</th><th>שם</th><th>דוגמאות</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0–1023</td><td>System / Well-known</td><td>ftp 21, ssh 22, telnet 23, smtp 25, time 37, http 80, https 443</td></tr>
+      <tr><td class="num">1024–49151</td><td>User / Registered</td><td>RDP 3389, MySQL 3306</td></tr>
+      <tr><td class="num">49152–65535</td><td>Dynamic / Private</td><td>פורטי מקור זמניים של לקוחות</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid">
+    <div class="box"><h4 style="color:var(--def)">Open</h4><p>תהליך מאזין. SYN לפורט פתוח הוא החבילה הראשונה של ה-Handshake, ונענה ב-SYN/ACK.</p></div>
+    <div class="box"><h4 style="color:var(--warn)">Closed</h4><p>אף תהליך לא מאזין. מערכת ההפעלה עונה על SYN ב-<b>RST</b>.</p></div>
+    <div class="box"><h4 style="color:var(--atk)">Filtered</h4><p>Packet filter (Firewall) יושב על הפורט. אין תשובה, או ICMP unreachable.</p></div>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>Vertical scan</h4><p>מארח אחד, הרבה פורטים. <code>nmap 10.1.1.10 -p 1024-4423</code>. "מה רץ על השרת הזה?"</p></div>
+    <div class="box"><h4>Horizontal scan</h4><p>פורט אחד, הרבה מארחים. <code>nmap 10.1.1.0/24 -p 80</code>. "מי ברשת מריץ שירות X?" כך עובדות תולעים.</p></div>
+  </div>
+</section>
+
+<section id="alive">
+  <h2><span class="n">3</span>מי חי ברשת: Ping sweep ו-ARP scan</h2>
+  <div class="col">
+  <p><b>Ping sweep:</b> שולחים ICMP Echo Request (Type 8) לכל כתובת בטווח. Echo Reply (Type 0) = המארח חי. אפשר להשתמש גם ב-ARP, TCP או UDP.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>ICMP Type</th><th>משמעות</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0</td><td>Echo Reply</td></tr><tr><td class="num">3</td><td>Destination Unreachable (קוד 3 = Port unreachable, חשוב לסריקת UDP)</td></tr>
+      <tr><td class="num">4</td><td>Source Quench</td></tr><tr><td class="num">5</td><td>Redirect</td></tr>
+      <tr><td class="num">8</td><td>Echo Request</td></tr><tr><td class="num">11</td><td>Time Exceeded (traceroute)</td></tr>
+      <tr><td class="num">12</td><td>Parameter Problem</td></tr><tr><td class="num">13 / 14</td><td>Timestamp / Timestamp Reply</td></tr>
+      <tr><td class="num">15 / 16</td><td>Information Request / Reply</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <div class="atk"><span class="tag">כשה-ICMP חסום</span>
+<pre># ping 192.168.0.2
+Request timeout for icmp_seq 0          ← נראה "מת"
+# hping2 192.168.0.2 -S -p 80
+60 bytes from 192.168.0.2: flags=SA ...   ← SYN/ACK, הוא חי!</pre>
+  <p>חסימת ICMP לא מסתירה מארח שמריץ שירות. שולחים SYN לפורט נפוץ (80, 443) וכל תשובה, גם RST, מוכיחה שהוא קיים.</p></div>
+  <h3>ARP scan</h3>
+  <p>שולחים ARP Request ("מי מחזיק את 192.168.1.X?") לכל כתובת בסגמנט.</p>
+  </div>
+  <div class="grid">
+    <div class="box"><h4 style="color:var(--def)">יתרון</h4><p>עובד בשכבה 2. Firewall במארח לא יכול להסתיר אותו, כי בלי לענות ל-ARP אי אפשר לתקשר בכלל.</p></div>
+    <div class="box"><h4 style="color:var(--atk)">חיסרון</h4><p>עובד בשכבה 2. חייבים להיות באותו סגמנט, ולא עובר נתבים.</p></div>
+  </div>
+  <div class="col">
+  <h3>חשבון זמנים (מההרצאה)</h3>
+  <p>Class B = 65,536 מארחים. Ping של שנייה למארח ≈ 18 שעות. פורט אחד לכל מארח ≈ עוד 18 שעות. Banner ל-10 שירותים בכל מארח (2 שניות) ≈ 15 ימים. Class A (16 מיליון) לוקח ימים.</p>
+  <div class="why"><span class="tag">איך מאיצים</span><p>קודם Host discovery ורק אז סריקת פורטים על החיים, לבחור פורטים רלוונטיים, ולפצל בין הרבה סורקים (בוטים). היום Masscan ו-ZMap סורקים את כל IPv4 בפורט אחד בפחות משעה, כי הם שולחים באופן אסינכרוני בלי לחכות לתשובה.</p></div>
+  </div>
+</section>
+
+<section id="icmp-atk">
+  <h2><span class="n">4</span>תקיפות מבוססות ICMP: Smurf, Fraggle, Ping flood, Ping of death</h2>
+  <figure>
+    <svg viewBox="0 0 700 280" width="700" role="img" aria-label="Smurf">
+      <g font-size="13">
+        <rect x="560" y="110" width="120" height="56" rx="10" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="2"/><text x="620" y="135" text-anchor="middle" font-weight="700">Attacker</text><text x="620" y="154" text-anchor="middle" font-size="11" fill="var(--muted)">src = Victim IP</text>
+        <rect x="330" y="105" width="120" height="66" rx="10" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="390" y="132" text-anchor="middle" font-weight="700">Router</text><text x="390" y="152" text-anchor="middle" font-size="11">10.0.0.255</text><text x="390" y="166" text-anchor="middle" font-size="10" fill="var(--muted)">broadcast</text>
+        <line x1="558" y1="138" x2="454" y2="138" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/><text x="506" y="128" text-anchor="middle" font-size="11">Echo Req</text>
+        <g fill="var(--surface)" stroke="var(--line)">
+          <rect x="190" y="20" width="80" height="34" rx="6"/><rect x="190" y="80" width="80" height="34" rx="6"/><rect x="190" y="140" width="80" height="34" rx="6"/><rect x="190" y="200" width="80" height="34" rx="6"/>
+        </g>
+        <g font-size="11" text-anchor="middle"><text x="230" y="42">Host</text><text x="230" y="102">Host</text><text x="230" y="162">Host</text><text x="230" y="222">Host</text></g>
+        <g stroke="var(--warn)" stroke-width="1.5"><line x1="330" y1="125" x2="274" y2="40" marker-end="url(#ar)"/><line x1="330" y1="130" x2="274" y2="97" marker-end="url(#ar)"/><line x1="330" y1="145" x2="274" y2="157" marker-end="url(#ar)"/><line x1="330" y1="155" x2="274" y2="215" marker-end="url(#ar)"/></g>
+        <rect x="20" y="110" width="110" height="56" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><text x="75" y="143" text-anchor="middle" font-weight="700">Victim</text>
+        <g stroke="var(--atk)" stroke-width="2.5"><line x1="188" y1="37" x2="134" y2="120" marker-end="url(#ar)"/><line x1="188" y1="97" x2="134" y2="130" marker-end="url(#ar)"/><line x1="188" y1="157" x2="134" y2="145" marker-end="url(#ar)"/><line x1="188" y1="217" x2="134" y2="158" marker-end="url(#ar)"/></g>
+        <text x="350" y="265" text-anchor="middle" fill="var(--muted)">חבילה אחת של התוקף → N תשובות לקורבן (הגברה × מספר המארחים)</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="grid">
+    <div class="box"><h4>Smurf (1997, smurf.c)</h4><p>ICMP Echo לכתובת Broadcast עם IP מקור מזויף של הקורבן. כל מארח ברשת עונה לקורבן ומציף אותו. זו DDoS עם <b>הגברה</b>.</p></div>
+    <div class="box"><h4>Fraggle</h4><p>אותו רעיון עם <b>UDP</b> לפורט 7 (echo) ו-19 (chargen) בכתובת Broadcast. chargen עונה בזרם תווים, ולכן ההגברה גדולה יותר.</p></div>
+    <div class="box"><h4>Ping flood</h4><p>הצפה בכמות עצומה של Pings (<code>ping -f</code> ב-Unix). הדרישה היחידה: יותר רוחב פס מהקורבן.</p></div>
+    <div class="box"><h4>Ping of Death</h4><p>חבילת Ping פגומה. IP מוגבל ל-65,535 בייט; שולחים פרגמנטים שבהרכבה מחדש עוברים את הגבול, וגורמים ל-Buffer overflow וקריסה (מערכות של שנות ה-90).</p></div>
+  </div>
+  <div class="col">
+  <div class="def"><span class="tag">הגנה</span><p>לא להעביר Directed broadcast בנתבים (<code>no ip directed-broadcast</code>, ברירת מחדל מאז 1999 בעקבות RFC 2644), לבטל שירותי echo/chargen, להגביל ICMP ב-ACL ל-DMZ ולמארחים ספציפיים, ו-Rate limiting. BCP 38 (Ingress filtering) מונע זיוף כתובות מקור.</p></div>
+  </div>
+</section>
+
+<section id="tcp">
+  <h2><span class="n">5</span>שיטות סריקת TCP</h2>
+  <figure>
+    <svg viewBox="0 0 720 330" width="720" role="img" aria-label="Connect vs SYN">
+      <g font-size="13">
+        <text x="540" y="20" text-anchor="middle" font-weight="700">Connect scan (-sT)</text>
+        <text x="680" y="45" text-anchor="middle">Scanner</text><text x="400" y="45" text-anchor="middle">Target</text>
+        <line x1="680" y1="52" x2="680" y2="320" stroke="var(--line)" stroke-width="2"/><line x1="400" y1="52" x2="400" y2="320" stroke="var(--line)" stroke-width="2"/>
+        <line x1="675" y1="80" x2="406" y2="80" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="540" y="73" text-anchor="middle">SYN</text>
+        <line x1="406" y1="115" x2="675" y2="115" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="540" y="108" text-anchor="middle" fill="var(--def)">SYN/ACK</text>
+        <line x1="675" y1="150" x2="406" y2="150" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="540" y="143" text-anchor="middle">ACK</text>
+        <line x1="675" y1="185" x2="406" y2="185" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="540" y="178" text-anchor="middle">RST/ACK</text>
+        <text x="540" y="225" text-anchor="middle" fill="var(--muted)">חיבור מלא → נרשם בלוג של האפליקציה</text>
+
+        <text x="180" y="20" text-anchor="middle" font-weight="700">SYN scan / Half-open (-sS)</text>
+        <text x="320" y="45" text-anchor="middle">Scanner</text><text x="40" y="45" text-anchor="middle">Target</text>
+        <line x1="320" y1="52" x2="320" y2="320" stroke="var(--line)" stroke-width="2"/><line x1="40" y1="52" x2="40" y2="320" stroke="var(--line)" stroke-width="2"/>
+        <line x1="315" y1="80" x2="46" y2="80" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="180" y="73" text-anchor="middle">SYN</text>
+        <line x1="46" y1="115" x2="315" y2="115" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="180" y="108" text-anchor="middle" fill="var(--def)">SYN/ACK = open</text>
+        <line x1="315" y1="150" x2="46" y2="150" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/><text x="180" y="143" text-anchor="middle" fill="var(--atk)">RST (לא משלים)</text>
+        <text x="180" y="190" text-anchor="middle" fill="var(--muted)">החיבור לא נפתח → האפליקציה לא רואה</text>
+        <line x1="315" y1="245" x2="46" y2="245" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="180" y="238" text-anchor="middle">SYN</text>
+        <line x1="46" y1="280" x2="315" y2="280" stroke="var(--warn)" stroke-width="2" marker-end="url(#ar)"/><text x="180" y="273" text-anchor="middle" fill="var(--warn)">RST/ACK = closed</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>סריקה</th><th>Nmap</th><th>שולחים</th><th>Open</th><th>Closed</th><th>יתרונות / חסרונות</th></tr></thead>
+    <tbody>
+      <tr><td><b>TCP Connect</b></td><td><code>-sT</code></td><td>Handshake מלא (<code>connect()</code>)</td><td>חיבור הצליח</td><td>RST</td><td>לא צריך root, אמין. איטי, רועש, נרשם בלוגים. "מראה ל-FW/IPS שהסשן נפתח כראוי"</td></tr>
+      <tr><td><b>SYN (Stealth)</b></td><td><code>-sS</code></td><td>SYN בלבד</td><td>SYN/ACK</td><td>RST</td><td>מהיר, פחות עקבות ומשאבים. צריך root (Raw sockets). הרבה SYNs יכולים לגרום ל-DoS (חצאי חיבורים)</td></tr>
+      <tr><td><b>FIN</b></td><td><code>-sF</code></td><td>FIN</td><td>אין תשובה</td><td>RST</td><td>עובר Firewalls פשוטים שמסננים רק SYN. עובד בעיקר על Unix</td></tr>
+      <tr><td><b>Xmas</b></td><td><code>-sX</code></td><td>FIN+URG+PSH</td><td>אין תשובה</td><td>RST</td><td>כמו FIN</td></tr>
+      <tr><td><b>Null</b></td><td><code>-sN</code></td><td>בלי דגלים</td><td>אין תשובה</td><td>RST</td><td>כמו FIN</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <div class="why"><span class="tag">למה FIN/Xmas/Null עובדים</span><p>RFC 793 קובע: חבילה בלי SYN שמגיעה לפורט <b>סגור</b> נענית ב-RST, ולפורט <b>פתוח</b> נזרקת בשקט. לכן אין תשובה = פתוח (או מסונן!). <b>Windows לא עוקב אחרי ה-RFC</b> ושולח RST תמיד, ולכן על Windows כל הפורטים נראים סגורים. זה עצמו מגלה את מערכת ההפעלה.</p></div>
+  </div>
+</section>
+
+<section id="anon">
+  <h2><span class="n">6</span>סריקה אנונימית</h2>
+  <div class="grid">
+    <div class="box"><h4>Silent scan</h4><p><code>nmap -sT -T sneaky -p 80,135,139 ...</code><br>מאט את הקצב (חבילה כל ~15 שניות) כדי לא לעבור את הסף של ה-IDS ("X חבילות בזמן Y").</p></div>
+    <div class="box"><h4>Fragmentation scan</h4><p><code>nmap -f ...</code><br>מפצל את כותרת ה-TCP לפרגמנטים קטנים. IDS או Firewall שלא מרכיבים חבילות מחדש לא רואים את הדגלים.</p></div>
+    <div class="box"><h4>Decoy scan</h4><p><code>nmap -D 1.1.1.1,2.2.2.2,ME,3.3.3.3 ...</code><br>שולח סריקות מזויפות מכתובות פיתיון לצד הסריקה האמיתית. היעד רואה 4 סורקים ולא יודע מי האמיתי.</p></div>
+  </div>
+  <div class="col"><div class="def"><span class="tag">הגנה</span><p>Snort מרכיב פרגמנטים (Preprocessor) לפני הבדיקה. ספי זמן ארוכים נגד Sneaky. ב-Decoy: ה-TTL של החבילות המזויפות שונה לפעמים מזה של האמיתית, ופיתיונות שלא קיימים לא מגיבים ל-SYN/ACK.</p></div></div>
+</section>
+
+<section id="idle">
+  <h2><span class="n">7</span>Idle (Zombie) scan: לסרוק בלי לשלוח חבילה אחת מהכתובת שלך</h2>
+  <div class="col"><p>מבוסס על <b>IP ID צפוי</b>: מארחים ישנים מעלים את שדה ה-IP ID ב-1 עם כל חבילה שהם שולחים. אם ה-Zombie "שקט" (Idle), אפשר לספור כמה חבילות הוא שלח. <code>nmap -sI &lt;zombie&gt; &lt;target&gt;</code></p></div>
+  <figure>
+    <svg viewBox="0 0 720 420" width="720" role="img" aria-label="Idle scan">
+      <g font-size="13">
+        <text x="640" y="22" text-anchor="middle" font-weight="700" fill="var(--atk)">Attacker</text>
+        <text x="360" y="22" text-anchor="middle" font-weight="700">Zombie</text>
+        <text x="80" y="22" text-anchor="middle" font-weight="700">Target</text>
+        <line x1="640" y1="30" x2="640" y2="410" stroke="var(--line)" stroke-width="2"/><line x1="360" y1="30" x2="360" y2="410" stroke="var(--line)" stroke-width="2"/><line x1="80" y1="30" x2="80" y2="410" stroke="var(--line)" stroke-width="2"/>
+        <text x="710" y="62" text-anchor="start" font-size="11" fill="var(--accent)">שלב 1</text>
+        <line x1="635" y1="60" x2="366" y2="60" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="53" text-anchor="middle">SYN/ACK</text>
+        <line x1="366" y1="90" x2="635" y2="90" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="83" text-anchor="middle">RST, <tspan font-weight="700" fill="var(--accent)">IPID = 5</tspan></text>
+        <text x="710" y="137" text-anchor="start" font-size="11" fill="var(--accent)">שלב 2</text>
+        <path d="M635,135 L86,135" stroke="var(--atk)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ar)" fill="none"/><text x="360" y="128" text-anchor="middle" fill="var(--atk)">SYN, src = Zombie (מזויף)</text>
+        <text x="40" y="178" text-anchor="end" font-weight="700" fill="var(--def)">פורט פתוח:</text>
+        <line x1="86" y1="190" x2="354" y2="190" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="220" y="183" text-anchor="middle" fill="var(--def)">SYN/ACK</text>
+        <line x1="354" y1="220" x2="86" y2="220" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="220" y="213" text-anchor="middle" fill="var(--def)">RST (IPID → 6)</text>
+        <text x="40" y="258" text-anchor="end" font-weight="700" fill="var(--warn)">פורט סגור:</text>
+        <line x1="86" y1="270" x2="354" y2="270" stroke="var(--warn)" stroke-width="2" marker-end="url(#ar)"/><text x="220" y="263" text-anchor="middle" fill="var(--warn)">RST (ה-Zombie מתעלם, IPID נשאר 5)</text>
+        <text x="710" y="322" text-anchor="start" font-size="11" fill="var(--accent)">שלב 3</text>
+        <line x1="635" y1="320" x2="366" y2="320" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="313" text-anchor="middle">SYN/ACK</text>
+        <line x1="366" y1="350" x2="635" y2="350" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="343" text-anchor="middle">RST, IPID = ?</text>
+        <text x="500" y="385" text-anchor="middle" font-weight="700"><tspan fill="var(--warn)">6 → סגור</tspan>   ·   <tspan fill="var(--def)">7 → פתוח</tspan></text>
+      </g>
+    </svg>
+    <figcaption>היעד רואה רק את ה-Zombie. ה-IP של התוקף לא מופיע אצל היעד בשום חבילה.</figcaption>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">למה זה עובד</span><p>ה-Zombie הוא "מונה" שהתוקף יכול לקרוא מרחוק. ההבדל בין 6 ל-7 הוא בדיוק החבילה (RST) שה-Zombie שלח לבד כתגובה ל-SYN/ACK מהיעד. בשלב 1 חוזרים כמה פעמים כדי לוודא שה-Zombie באמת שקט (IPID עולה ב-1 בדיוק).</p></div>
+  <div class="def"><span class="tag">הגנה</span><p>מערכות מודרניות (Linux, Windows 8+) משתמשות ב-IP ID אקראי או לכל יעד בנפרד, ולכן לא יכולות לשמש Zombie. מדפסות ומכשירי IoT ישנים עדיין מתאימים. Ingress filtering מונע את הזיוף, ו-Stateful firewall זורק SYN/ACK שלא ביקשו.</p></div>
+  </div>
+</section>
+
+<section id="udp">
+  <h2><span class="n">8</span>סריקת UDP</h2>
+  <div class="col">
+  <p><code>nmap -sU</code> שולח חבילת UDP ריקה (0 בייט). <b>ICMP Port Unreachable</b> (Type 3, Code 3) = סגור. כל דבר אחר = "פתוח" (Nmap מסמן <code>open|filtered</code>).</p>
+  <div class="atk"><span class="tag">הבעיות</span><ol><li>אם Firewall חוסם את הפורט, אין תשובה, והפורט <b>נראה פתוח</b>.</li><li>רוב מערכות ההפעלה מגבילות קצב הודעות ICMP Unreachable (Linux: אחת לשנייה), ולכן סריקה מלאה איטית מאוד.</li></ol></div>
+  <p>Nmap משפר את זה עם Payloads ספציפיים לפרוטוקולים (שאילתת DNS לפורט 53, SNMP ל-161), שמקבלים תשובה אמיתית מפורט פתוח.</p>
+  </div>
+</section>
+
+<section id="detect">
+  <h2><span class="n">9</span>זיהוי ומניעה של סריקות</h2>
+  <div class="col">
+  <p>זיהוי סריקות הוא <b>התרעה מוקדמת</b> לתקיפה. הכלי העיקרי: <b>NIDS</b> כמו Snort. זה שקיימת טכנולוגיה לזהות, לא אומר שמישהו מסתכל בזמן אמת.</p>
+  <h3>Snort: IDS/IPS בקוד פתוח</h3>
+  <p>מבוסס חוקים: Signatures, בדיקת פרוטוקולים ואנומליות. מזהה DoS, סריקות וניסיונות פריצה ע"י ניטור תעבורה.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 150" width="720" role="img" aria-label="Snort pipeline">
+      <g font-size="13">
+        <rect x="590" y="40" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="650" y="70" text-anchor="middle" font-weight="700">Packet Decoder</text><text x="650" y="92" text-anchor="middle" font-size="11" fill="var(--muted)">Ethernet, PPP...</text>
+        <rect x="445" y="40" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="505" y="70" text-anchor="middle" font-weight="700">Preprocessors</text><text x="505" y="88" text-anchor="middle" font-size="11" fill="var(--muted)">defrag, TCP reassembly,</text><text x="505" y="102" text-anchor="middle" font-size="11" fill="var(--muted)">URI decode, sfPortscan</text>
+        <rect x="300" y="40" width="120" height="70" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="360" y="70" text-anchor="middle" font-weight="700">Detection Engine</text><text x="360" y="92" text-anchor="middle" font-size="11" fill="var(--muted)">מפעיל חוקים</text>
+        <rect x="155" y="40" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="215" y="70" text-anchor="middle" font-weight="700">Logging/Alerting</text>
+        <rect x="10" y="40" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="70" y="70" text-anchor="middle" font-weight="700">Output Modules</text><text x="70" y="92" text-anchor="middle" font-size="11" fill="var(--muted)">DB, syslog, SIEM</text>
+        <g stroke="var(--muted)" stroke-width="2"><line x1="588" y1="75" x2="569" y2="75" marker-end="url(#ar)"/><line x1="443" y1="75" x2="424" y2="75" marker-end="url(#ar)"/><line x1="298" y1="75" x2="279" y2="75" marker-end="url(#ar)"/><line x1="153" y1="75" x2="134" y2="75" marker-end="url(#ar)"/></g>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+<pre>alert tcp any any -> $HOME_NET any (flags:F; msg:"FIN scan"; sid:1000001;)
+alert tcp any any -> $HOME_NET any (flags:FPU; msg:"Xmas scan"; sid:1000002;)
+alert tcp any any -> $HOME_NET any (flags:0; msg:"Null scan"; sid:1000003;)</pre>
+  <p class="note">דוגמת חוקים להמחשה (לא מהשקפים).</p>
+  <h3>מניעה</h3>
+  <ul>
+    <li>קשה מאוד למנוע סריקה. ממזערים חשיפה: לבטל כל שירות לא נחוץ (ב-Unix: <code>/etc/inetd.conf</code> וסקריפטי עלייה, ב-Windows: Services).</li>
+    <li>Ping sweep: להחליט איזה ICMP נכנס (למשל רק ל-DMZ ולמארחים ספציפיים), ACL לפי IP.</li>
+    <li>IPS יכול לזהות ולחסום, אבל יקר ויש False positives.</li>
+  </ul>
+  <div class="why"><span class="tag">שאלה מההרצאה</span><p><b>פתח מנגנון שמזהה וחוסם Ping sweep.</b> זיהוי: מקור אחד ששולח Echo Request ליותר מ-N כתובות שונות בחלון זמן (ההרצאה מציעה "ECHO request &gt; ECHO reply ב-15 שניות", כלומר הרבה בקשות לכתובות שלא עונות). לגיטימי? כלי ניהול רשת שולחים Ping לפני חיבור, ולכן: Whitelist של שרתי ניהול, ובדיקה אם אחרי ה-Ping באמת נפתח חיבור (ניהול) או שהמקור עובר לכתובת הבאה (סריקה). חסימה: חסימה זמנית של המקור ב-Firewall (Shun) או Rate limit ל-ICMP ממנו.</p></div>
+  </div>
+</section>
+
+<section id="os">
+  <h2><span class="n">10</span>זיהוי מערכת הפעלה (OS Fingerprinting)</h2>
+  <div class="col"><p>למה? Exploit עובד על מערכת וגרסה ספציפית. מימושי TCP/IP שונים זה מזה בפרטים שה-RFC לא קבע, וההבדלים האלה הם "טביעת אצבע".</p></div>
+  <div class="grid">
+    <div class="box"><h4>Active · Banner grabbing</h4><p>שירותים מכריזים מי הם (HTTP <code>Server:</code>, SSH <code>SSH-2.0-OpenSSH_7.4 Debian</code>, FTP <code>220 ProFTPD</code>). קל, אבל אפשר לזייף.</p></div>
+    <div class="box"><h4>Active · Stack fingerprinting</h4><p>Nmap <code>-O</code> שולח חבילות "מוזרות" ומשווה תגובות ל-DB. דורש לרוב לפחות פורט פתוח אחד; בלי זה הדיוק נמוך.</p></div>
+    <div class="box"><h4>Passive · Stack fingerprinting</h4><p>לא שולחים כלום, רק מאזינים (מיקום מרכזי או Port mirror). כלים: Siphon, p0f. דורש גישה לתעבורה.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Probe אקטיבי</th><th>מה בודקים</th></tr></thead>
+    <tbody>
+      <tr><td>FIN probe</td><td>FIN לפורט פתוח. לפי RFC לא עונים; Windows עונה FIN/ACK.</td></tr>
+      <tr><td>Bogus flag</td><td>דגל לא מוגדר ב-SYN. Linux מחזיר אותו בתשובה.</td></tr>
+      <tr><td>ISN sampling</td><td>הדפוס של Initial Sequence Number (אקראי, מבוסס זמן, קבוע).</td></tr>
+      <tr><td>DF bit</td><td>האם מסמנים Don't Fragment.</td></tr>
+      <tr><td>TCP initial window</td><td>גודל חלון התחלתי, ייחודי בחלק מהמימושים.</td></tr>
+      <tr><td>ACK value</td><td>חלק מחזירים את ה-Seq שנשלח, חלק Seq+1.</td></tr>
+      <tr><td>ICMP error quenching</td><td>כמה Port Unreachable מתקבלים בזמן נתון (Rate limit שונה בכל OS).</td></tr>
+      <tr><td>ICMP message quoting</td><td>כמה מהחבילה המקורית מצוטט בהודעת השגיאה.</td></tr>
+      <tr><td>ICMP echoing integrity</td><td>האם ה-OS משנה את כותרות ה-IP כשהוא מצטט אותן.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>חתימות פסיביות: TTL, Window size, DF</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>מערכת</th><th>TTL התחלתי</th><th>הערה</th></tr></thead>
+    <tbody>
+      <tr><td>Linux / macOS / Android</td><td class="num">64</td><td>Window משתנה לפי גרסה</td></tr>
+      <tr><td>Windows</td><td class="num">128</td><td></td></tr>
+      <tr><td>Solaris, Cisco IOS</td><td class="num">255</td><td>הדוגמה מההרצאה</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+<pre>192.168.1.11:23 -> 192.168.1.10:2295 TCP TTL:255 TOS:0x0 ID:58934 DF
+**S***A* Seq: 0xD3B709A4 Ack: 0xBE09B2B7 Win: 0x2798
+
+TTL = 255 · Window = 0x2798 · DF = Yes   →   Solaris 2.6–2.7</pre>
+  <p>הדוגמה: פותחים חיבור Telnet רגיל, מרחרחים את התשובה, ומגיעים ל"ניחוש מושכל" של Solaris <b>בלי לשלוח אף חבילה חריגה</b>. Siphon עושה את זה אוטומטית.</p>
+  <p class="note">טיפ: TTL שנראה בפועל הוא ההתחלתי פחות מספר הקפיצות. TTL 117 → כנראה 128 (Windows) במרחק 11 נתבים.</p>
+  <div class="atk"><span class="tag">מגבלות</span><p>אפליקציות שבונות חבילות בעצמן (Nmap עצמו) נראות שונות מה-OS. צריך להיות במיקום שרואה את התעבורה. וקל לשנות את הפרמטרים האלה, מה שפוגע גם בזיהוי אקטיבי.</p></div>
+  <div class="def"><span class="tag">זיהוי ומניעה</span><p>זיהוי אקטיבי שולח חבילות חריגות, ולכן NIDS מזהה אותו בקלות; זו לא טכניקה חשאית. מניעה: אפשר לשנות פרמטרים של ה-Stack (למשל <code>net.ipv4.ip_default_ttl</code>), אבל זה עלול לפגוע בתאימות. <b>"Security through obscurity" היא לא קו ההגנה הראשון</b>: גם אם התוקף יודע את ה-OS, עדכונים והקשחה צריכים לעצור אותו.</p></div>
+  </div>
+</section>
+
+<section id="review">
+  <h2><span class="n">11</span>חזרה מהירה למבחן</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>שאלה</th><th>תשובה קצרה</th></tr></thead>
+    <tbody>
+      <tr><td>Open / Closed / Filtered בתגובה ל-SYN?</td><td>SYN/ACK / RST / שקט או ICMP unreachable.</td></tr>
+      <tr><td>Connect מול SYN scan?</td><td>Connect משלים Handshake (רועש, בלי root). SYN שולח RST אחרי SYN/ACK (חשאי, צריך root).</td></tr>
+      <tr><td>למה FIN/Xmas/Null לא עובדים על Windows?</td><td>Windows שולח RST גם מפורט פתוח, בניגוד ל-RFC 793.</td></tr>
+      <tr><td>יתרון וחיסרון של ARP scan?</td><td>Firewall לא מסתיר ממנו; עובד רק באותו סגמנט.</td></tr>
+      <tr><td>Smurf מול Fraggle?</td><td>ICMP Echo ל-Broadcast מול UDP 7/19 ל-Broadcast, שניהם עם IP מקור של הקורבן.</td></tr>
+      <tr><td>Idle scan: IPID 6 או 7?</td><td>עלייה ב-1 = סגור, עלייה ב-2 = פתוח.</td></tr>
+      <tr><td>למה סריקת UDP לא אמינה?</td><td>שקט יכול להיות Firewall; ICMP unreachable מוגבל בקצב.</td></tr>
+      <tr><td>3 חתימות פסיביות לזיהוי OS?</td><td>TTL, Window size, DF bit.</td></tr>
+      <tr><td>שלוש טכניקות אנונימיות?</td><td>Silent (-T sneaky), Fragmentation (-f), Decoy (-D).</td></tr>
+      <tr><td>רכיבי Snort?</td><td>Decoder → Preprocessors → Detection engine → Logging/Alerting → Output.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src col">מקור: "03 Network 1 Scanning 2015-07.pdf" (74 שקפים). דוגמאות "עולם אמיתי" וחוקי Snort שלא בשקפים הן תוספות שלי.</p>
+</section>

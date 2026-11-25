@@ -1,0 +1,465 @@
+<header class="top">
+  <div class="eyebrow">פרק 09</div>
+  <h1>Firewalls ו-Access Control</h1>
+  <p class="lead">מה Firewall עושה ולמה, מדיניות (Accept/Drop/Reject, Whitelist מול Blacklist), DMZ, שלושת סוגי ה-Firewall (Packet filter, Circuit-level, Application proxy), Stateless מול Stateful, ארכיטקטורות (Bastion host, Screened subnet), NAT, iptables, המגבלות, ותרגילי טבלת חוקים. ובסוף: מודלי בקרת גישה (ACL, Capability, RBAC).</p>
+  <nav class="toc" aria-label="תוכן עניינים">
+    <a href="#why">למה Firewall</a><a href="#policy">מדיניות</a><a href="#dmz">DMZ</a><a href="#types">סוגים</a><a href="#stateless">Stateless</a><a href="#rules">טבלת חוקים</a><a href="#stateful">Stateful</a><a href="#proxy">Circuit ו-Proxy</a><a href="#arch">ארכיטקטורות</a><a href="#nat">NAT</a><a href="#ipt">iptables</a><a href="#limits">מגבלות</a><a href="#quiz">Quiz</a><a href="#ac">Access Control</a><a href="#review">חזרה</a>
+  </nav>
+</header>
+
+<section id="why">
+  <h2><span class="n">1</span>למה Firewall</h2>
+  <div class="grid">
+    <div class="box"><h4>למה בכלל</h4><ul><li>לרוב המארחים יש חולשות.</li><li>Firewall מריץ פחות קוד, ולכן פחות באגים.</li><li>תיעוד וניטור של כל הסגמנט במקום אחד.</li><li>אוכף חלוקת הרשת לאזורי אבטחה נפרדים.</li></ul></div>
+    <div class="box"><h4>מה הוא</h4><p>רכיב רשת שמגביל גישה למשאבים לפי <b>מדיניות אבטחה</b>. מחבר שני חלקי רשת ושולט במה שזורם ביניהם: <b>Choke point</b> של שליטה וניטור. חייב להיות עצמו חסין לחדירה (מערכת מהימנה עם OS מוקשח).</p></div>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 180" width="720" role="img" aria-label="Perimeter">
+      <g font-size="13">
+        <rect x="430" y="20" width="270" height="140" rx="12" fill="var(--def-soft)" stroke="var(--def)"/><text x="565" y="45" text-anchor="middle" font-weight="700">Protected network</text>
+        <g fill="var(--surface)" stroke="var(--line)"><rect x="460" y="65" width="70" height="30" rx="5"/><rect x="600" y="65" width="70" height="30" rx="5"/><rect x="530" y="110" width="70" height="30" rx="5"/></g>
+        <rect x="320" y="55" width="80" height="70" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="2"/><text x="360" y="95" text-anchor="middle" font-weight="700">FW</text>
+        <ellipse cx="140" cy="90" rx="120" ry="60" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="140" y="95" text-anchor="middle" font-weight="700">Internet</text>
+        <line x1="262" y1="90" x2="318" y2="90" stroke="var(--ink)" stroke-width="3"/><line x1="402" y1="90" x2="428" y2="90" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M600,140 C560,175 180,175 150,152" fill="none" stroke="var(--atk)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ar)"/>
+        <text x="380" y="172" text-anchor="middle" font-size="12" fill="var(--atk)">מודם / Wi-Fi לא מורשה / 4G = עקיפה מלאה של ה-Firewall</text>
+      </g>
+    </svg>
+    <figcaption>Perimeter defence: Firewall מסנן רק תעבורה שעוברת דרכו. כל ערוץ אחר הופך אותו ללא יעיל.</figcaption>
+  </figure>
+  <div class="col"><p>Firewall מחבר רשתות עם רמות אמון שונות: בין הארגון לאינטרנט, בין מחלקות בתוך הארגון, או על מחשב בודד (<b>Personal firewall</b>). המטרה: להקטין את משטח התקיפה.</p></div>
+</section>
+
+<section id="policy">
+  <h2><span class="n">2</span>מדיניות: פעולות, שדות, Whitelist מול Blacklist</h2>
+  <div class="grid">
+    <div class="box"><h4 style="color:var(--def)">Accept</h4><p>החבילה עוברת.</p></div>
+    <div class="box"><h4 style="color:var(--atk)">Drop</h4><p>נחסמת <b>בשקט</b>. לסורק זה נראה "filtered" (פרק 03), והוא מחכה ל-Timeout.</p></div>
+    <div class="box"><h4 style="color:var(--warn)">Reject</h4><p>נחסמת ונשלח ICMP Unreachable (או RST). מנומס, אבל מאשר לתוקף שיש שם Firewall.</p></div>
+  </div>
+  <div class="col"><p>שדות להחלטה: IP מקור ויעד, פרוטוקול (TCP/UDP/ICMP), פורט מקור ויעד, דגלי TCP, סוג הודעת ICMP.</p></div>
+  <div class="grid">
+    <div class="box"><h4>Blacklist (Default-allow)</h4><p>הכל עובר חוץ ממה שמוגדר. <b>יתרון:</b> לא משבש שירותים. <b>חיסרון:</b> תעבורה זדונית לא צפויה עוברת.</p></div>
+    <div class="box"><h4>Whitelist (Default-deny)</h4><p>הכל נחסם חוץ ממה שמותר במפורש. <b>יתרון:</b> בטוח יותר. <b>חיסרון:</b> חייבים לחשוב על כל תעבורה לגיטימית.</p><p class="note">זה Least privilege (פרק 01): "כל מה שלא מותר במפורש, אסור".</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>מאפיין</th><th>שולט ב...</th><th>דוגמה</th></tr></thead>
+    <tbody>
+      <tr><td>Service control</td><td>אילו שירותים נגישים</td><td>רק Web ו-Mail, לפי פורט או Proxy</td></tr>
+      <tr><td>Direction control</td><td>באיזה כיוון בקשות מותרות</td><td>גלישה החוצה כן, חיבור פנימה לא</td></tr>
+      <tr><td>User control</td><td>מי המשתמש</td><td>רק קבוצת IT יכולה SSH</td></tr>
+      <tr><td>Behaviour control</td><td>איך משתמשים בשירות</td><td>סינון ספאם במייל</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="dmz">
+  <h2><span class="n">3</span>Inside, Outside ו-DMZ</h2>
+  <figure>
+    <svg viewBox="0 0 720 260" width="720" role="img" aria-label="Trihomed DMZ">
+      <g font-size="13">
+        <ellipse cx="620" cy="130" rx="90" ry="55" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="620" y="128" text-anchor="middle" font-weight="700">Outside</text><text x="620" y="146" text-anchor="middle" font-size="11">untrusted</text>
+        <rect x="400" y="95" width="90" height="70" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="2"/><text x="445" y="135" text-anchor="middle" font-weight="700">FW</text>
+        <rect x="320" y="10" width="250" height="60" rx="10" fill="var(--warn-soft)" stroke="var(--warn)" stroke-dasharray="5 3"/><text x="445" y="32" text-anchor="middle" font-weight="700">DMZ · semi-trusted</text><text x="445" y="54" text-anchor="middle" font-size="12">Web · Mail · DNS · VoIP</text>
+        <rect x="20" y="85" width="300" height="90" rx="10" fill="var(--def-soft)" stroke="var(--def)"/><text x="170" y="122" text-anchor="middle" font-weight="700">Inside · trusted</text><text x="170" y="145" text-anchor="middle" font-size="12">תחנות עבודה, DB, AD</text>
+        <g stroke="var(--ink)" stroke-width="3"><line x1="530" y1="130" x2="494" y2="130"/><line x1="445" y1="93" x2="445" y2="74"/><line x1="398" y1="130" x2="324" y2="130"/></g>
+        <g font-size="12">
+          <path d="M560,105 C540,70 520,60 500,62" fill="none" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="610" y="70" text-anchor="middle" fill="var(--def)">✓ HTTP, SMTP</text>
+          <path d="M560,160 C520,230 300,230 250,178" fill="none" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/><text x="400" y="225" text-anchor="middle" fill="var(--atk)">✗ חיבור ישיר מבחוץ פנימה</text>
+          <path d="M250,85 C280,40 320,40 340,48" fill="none" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="230" y="55" text-anchor="middle" fill="var(--def)">✓ עדכון אתר, קריאת מייל</text>
+        </g>
+        <text x="360" y="252" text-anchor="middle" fill="var(--muted)">DMZ שנפרץ לא נותן גישה אוטומטית לרשת הפנימית</text>
+      </g>
+    </svg>
+    <figcaption>Trihomed DMZ: Firewall אחד עם שלוש רגליים. החלופה, Back-to-back DMZ, שמה את ה-DMZ בין שני Firewalls (ראו Screened subnet בהמשך).</figcaption>
+  </figure>
+  <div class="col">
+  <p>ב-DMZ שמים שרתים <b>נחוצים אבל מסוכנים</b>: מי שמבחוץ ניגש רק לשירותים הציבוריים (שולח מייל, מקבל דפים), ומי שבפנים מושך מידע מה-DMZ (קורא מייל, מעדכן אתר). מכונות ה-DMZ חייבות להיות מוגדרות היטב ומתועדות.</p>
+  <div class="atk"><span class="tag">ניצול</span><p>שרת Web ב-DMZ הוא נקודת הכניסה הנפוצה (SQL Injection, RCE). אם מה-DMZ מותר להתחבר לכל הרשת הפנימית ("כי ה-Web צריך את ה-DB"), התוקף ממשיך ב-Lateral movement. לכן חוקים מה-DMZ פנימה צריכים להיות מינימליים: רק מהשרת הספציפי, לפורט הספציפי.</p></div>
+  </div>
+</section>
+
+<section id="types">
+  <h2><span class="n">4</span>סוגי Firewall</h2>
+  <figure>
+    <svg viewBox="0 0 720 230" width="720" role="img" aria-label="Firewall types by layer">
+      <g font-size="13">
+        <g fill="var(--surface)" stroke="var(--line)"><rect x="470" y="20" width="230" height="44"/><rect x="470" y="64" width="230" height="44"/><rect x="470" y="108" width="230" height="44"/><rect x="470" y="152" width="230" height="44"/></g>
+        <g text-anchor="middle"><text x="585" y="47">Application (HTTP, SMTP, DNS)</text><text x="585" y="91">Transport (TCP / UDP)</text><text x="585" y="135">Network (IP)</text><text x="585" y="179">Data link</text></g>
+        <rect x="200" y="20" width="240" height="44" rx="8" fill="var(--def-soft)" stroke="var(--def)"/><text x="320" y="40" text-anchor="middle" font-weight="700">Application-level gateway</text><text x="320" y="56" text-anchor="middle" font-size="11">Proxy, מבין את הפרוטוקול</text>
+        <rect x="200" y="64" width="240" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="320" y="84" text-anchor="middle" font-weight="700">Circuit-level gateway</text><text x="320" y="100" text-anchor="middle" font-size="11">מעביר חיבורי TCP (SOCKS)</text>
+        <rect x="200" y="108" width="240" height="44" rx="8" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="320" y="128" text-anchor="middle" font-weight="700">Packet-filtering router</text><text x="320" y="144" text-anchor="middle" font-size="11">Stateless / Stateful</text>
+        <g stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"><line x1="440" y1="42" x2="468" y2="42"/><line x1="440" y1="86" x2="468" y2="86"/><line x1="440" y1="130" x2="468" y2="130"/></g>
+        <line x1="150" y1="200" x2="150" y2="25" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/>
+        <text x="100" y="60" text-anchor="middle" font-size="12">יותר ביטחון</text><text x="100" y="78" text-anchor="middle" font-size="12">והקשר</text>
+        <text x="100" y="170" text-anchor="middle" font-size="12">יותר מהיר</text><text x="100" y="188" text-anchor="middle" font-size="12">ושקוף</text>
+      </g>
+    </svg>
+    <figcaption>החלוקה לשכבות היא גסה: Packet filter משתמש גם בפורטים (שכבה 4). NGFW מודרני משלב את כולם.</figcaption>
+  </figure>
+<div class="tbl"><table><thead><tr><th>סוג</th><th>השכבה שהוא מבין</th><th>מה הוא קורא</th></tr></thead><tbody><tr><td>Packet filter (stateless)</td><td>רשת / תעבורה</td><td>IP header + פורטים ודגלים של TCP/UDP, כל packet לבד</td></tr><tr><td>Stateful inspection</td><td>תעבורה, עם זיכרון</td><td>אותם שדות + טבלת חיבורים (4-tuple, מצב, sequence numbers)</td></tr><tr><td>Circuit-level gateway</td><td>session (TCP)</td><td>מסיים את חיבור ה-TCP ומעביר בתים (SOCKS)</td></tr><tr><td>Application gateway (proxy)</td><td>אפליקציה</td><td>כל תוכן הפרוטוקול: URL, פקודות, headers, payload</td></tr></tbody></table></div>
+</section>
+
+<section id="stateless">
+  <h2><span class="n">5</span>Packet-filtering router (Stateless)</h2>
+  <div class="col">
+  <p>נתב ש"יודע לזרוק חבילות". בודק את כותרות TCP/IP של כל חבילה, מפעיל רשימת חוקים לפי הסדר, ומעביר או זורק. בשני הכיוונים. החלטה לפי: IP מקור ויעד, פורט מקור ויעד (ה-4-tuple), דגלים, וממשק.</p>
+  <p><b>Stateless:</b> לא זוכר שום הקשר. כל חבילה נבחנת לבד, בלי קשר לחבילות קודמות.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 260" width="720" role="img" aria-label="Stateless">
+      <g font-size="13">
+        <text x="640" y="22" text-anchor="middle" font-weight="700">Client (בפנים)</text><text x="360" y="22" text-anchor="middle" font-weight="700">Stateless FW</text><text x="80" y="22" text-anchor="middle" font-weight="700">Server</text>
+        <line x1="640" y1="30" x2="640" y2="250" stroke="var(--line)" stroke-width="2"/><rect x="350" y="30" width="20" height="220" fill="var(--warn-soft)" stroke="var(--warn)"/><line x1="80" y1="30" x2="80" y2="250" stroke="var(--line)" stroke-width="2"/>
+        <line x1="635" y1="60" x2="86" y2="60" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="53" text-anchor="middle">SYN → port 80</text><text x="220" y="53" text-anchor="middle" font-size="11" fill="var(--def)">✓ outbound SYN, dport 80</text>
+        <line x1="86" y1="100" x2="635" y2="100" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="220" y="93" text-anchor="middle">SYN-ACK, sport 80</text><text x="500" y="93" text-anchor="middle" font-size="11" fill="var(--def)">✓ inbound with ACK, sport 80</text>
+        <line x1="635" y1="140" x2="86" y2="140" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="133" text-anchor="middle">ACK</text>
+        <text x="40" y="190" text-anchor="end" fill="var(--atk)" font-weight="700" direction="rtl">תוקף</text>
+        <line x1="86" y1="200" x2="346" y2="200" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/><text x="220" y="193" text-anchor="middle" fill="var(--atk)">SYN → client</text><text x="500" y="205" text-anchor="middle" fill="var(--atk)">✗ inbound SYN נחסם</text>
+        <line x1="86" y1="235" x2="635" y2="235" stroke="var(--atk)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ar)"/><text x="220" y="228" text-anchor="middle" fill="var(--atk)" font-size="12" direction="ltr">spoofed ACK, sport 80</text><text x="500" y="228" text-anchor="middle" fill="var(--atk)" font-size="12">✓ עובר! (ACK scan, אין זיכרון)</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">הטריק של Stateless</span><p>רוצים לאפשר חיבורים יוצאים ותשובות, ולחסום חיבורים נכנסים. מה ידוע: החבילה הראשונה של TCP היא היחידה עם SYN בלי ACK, וכל השאר עם ACK. לכן: <b>מכניסים רק חבילות עם ACK דולק</b> (ובלשון iptables הישנה: <code>! --syn</code>).</p></div>
+  <div class="atk"><span class="tag">ניצול</span><p>תוקף שולח חבילות עם ACK והן עוברות: <b>ACK scan</b> (<code>nmap -sA</code>) ממפה את חוקי ה-Firewall (RST = לא מסונן). FIN/Xmas/Null scans (פרק 03) עוברים מאותה סיבה. UDP עוד יותר בעייתי: אין דגלים בכלל, ולכן "לאפשר תשובות DNS" = לאפשר כל UDP עם sport 53.</p></div>
+  </div>
+  <div class="grid">
+    <div class="box"><h4 style="color:var(--def)">יתרונות</h4><p>זול, פשוט, שקוף למשתמשים, מהיר מאוד.</p></div>
+    <div class="box"><h4 style="color:var(--atk)">חסרונות</h4><p>קשה להגדיר נכון (סיכון לטעות), מתעלם מתוכן האפליקציה, כמעט אין אימות משתמשים, פגיע לזיוף כתובות.</p></div>
+  </div>
+<div class="col"><p>איפה זה יושב ב-packet: הדגלים נמצאים בבית 13 של ה-TCP header. SYN/ACK = 0x12, ACK בלבד = 0x10. filter בלי מצב קורא רק את הבית הזה, ולכן כל packet עם 0x10 עובר.</p></div>
+</section>
+
+<section id="rules">
+  <h2><span class="n">6</span>כתיבת טבלת חוקים</h2>
+  <div class="col">
+  <p>תהליך: מתחילים ממדיניות אבטחה, מתרגמים לביטויים על שדות החבילה, ואז לתחביר של הספק. עקרונות: <b>Least privilege</b>, "מה שלא צריך, מוחקים". החוקים נבדקים <b>לפי הסדר</b> ו<b>החוק הראשון שמתאים מנצח</b>, ולכן חוקים ספציפיים (block) לפני כלליים (allow).</p>
+  <h3>דוגמה מההרצאה</h3>
+  <p>שרתים: 159.0.0.1 (Web), 159.0.0.2 (SMTP), 159.0.0.3 (אפליקציה). דרישות: כל העובדים גולשים; Web נגיש לכולם; SMTP לכולם חוץ מ-213.7.8.9; פורט 1250 בשרת השלישי רק מ-191.101.1.2; כל השאר חסום.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Action</th><th>Our host</th><th>Our port</th><th>Their host</th><th>Their port</th><th>Comment</th></tr></thead>
+    <tbody style="direction:ltr">
+      <tr><td>1</td><td style="color:var(--def)">allow</td><td>*</td><td>*</td><td>*</td><td>80</td><td>outgoing web browsing</td></tr>
+      <tr><td>2</td><td style="color:var(--def)">allow</td><td>159.0.0.1</td><td>80</td><td>*</td><td>*</td><td>incoming web</td></tr>
+      <tr><td>3</td><td style="color:var(--atk)">block</td><td>159.0.0.2</td><td>25</td><td>213.7.8.9</td><td>*</td><td>block this address from SMTP</td></tr>
+      <tr><td>4</td><td style="color:var(--def)">allow</td><td>159.0.0.2</td><td>25</td><td>*</td><td>*</td><td>SMTP for all others</td></tr>
+      <tr><td>5</td><td style="color:var(--def)">allow</td><td>159.0.0.3</td><td>1250</td><td>191.101.1.2</td><td>*</td><td>access to 1250</td></tr>
+      <tr><td>6</td><td style="color:var(--atk)">block</td><td>*</td><td>*</td><td>*</td><td>*</td><td>default deny</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col"><div class="why"><span class="tag">למה הסדר קריטי</span><p>אם מחליפים את 3 ו-4, חוק 4 תופס גם את 213.7.8.9 והחסימה לא תופעל לעולם. זו טעות קונפיגורציה קלאסית ("Shadowed rule").</p></div></div>
+  <h3>שימוש בדגלים: רק תשובות SMTP</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Action</th><th>Src</th><th>Sport</th><th>Dst</th><th>Dport</th><th>Flags</th><th>Comment</th></tr></thead>
+    <tbody style="direction:ltr">
+      <tr><td>allow</td><td>[our hosts]</td><td>*</td><td>*</td><td>25</td><td>*</td><td>internal hosts send to external SMTP</td></tr>
+      <tr><td>allow</td><td>*</td><td>25</td><td>*</td><td>*</td><td>ACK</td><td>replies from external SMTP</td></tr>
+    </tbody>
+  </table></div>
+  <h3>תרגיל מההרצאה (עם פתרון)</h3>
+  <div class="col"><p>Web ב-162.1.1.1, SSH ב-162.1.1.2. עובדים גולשים (HTTP ו-HTTPS); Web לכולם חוץ מ-113.17.18.5 ו-148.1.2.3; SSH לכולם; השאר חסום.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Action</th><th>Our host</th><th>Our port</th><th>Their host</th><th>Their port</th><th>Comment</th></tr></thead>
+    <tbody style="direction:ltr">
+      <tr><td style="color:var(--def)">allow</td><td>*</td><td>*</td><td>*</td><td>80</td><td>outgoing HTTP</td></tr>
+      <tr><td style="color:var(--def)">allow</td><td>*</td><td>*</td><td>*</td><td>443</td><td>outgoing HTTPS</td></tr>
+      <tr><td style="color:var(--atk)">block</td><td>162.1.1.1</td><td>80</td><td>113.17.18.5</td><td>*</td><td>block from incoming HTTP</td></tr>
+      <tr><td style="color:var(--atk)">block</td><td>162.1.1.1</td><td>80</td><td>148.1.2.3</td><td>*</td><td>block from incoming HTTP</td></tr>
+      <tr><td style="color:var(--def)">allow</td><td>162.1.1.1</td><td>80</td><td>*</td><td>*</td><td>all other incoming HTTP</td></tr>
+      <tr><td style="color:var(--def)">allow</td><td>162.1.1.2</td><td>22</td><td>*</td><td>*</td><td>incoming SSH</td></tr>
+      <tr><td style="color:var(--atk)">block</td><td>*</td><td>*</td><td>*</td><td>*</td><td>block everything else</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col"><p class="note">הערה: ב-Stateless צריך גם חוקים לתשובות (למשל allow ACK מ-sport 80/443 פנימה). בטבלאות של ההרצאה מניחים שהכיוון "Our/Their" מטופל.</p></div>
+</section>
+
+<section id="stateful">
+  <h2><span class="n">7</span>Stateful Inspection</h2>
+  <div class="col">
+  <p>בודק כל חבילה <b>בהקשר</b>: מחזיק <b>טבלת מצב</b> לכל חיבור (IPs, פורטים, Sequence numbers), ומוודא שכל חבילה שייכת לסשן קיים, מתחילה סשן חדש, או לא חוקית. כך אפשר לאשר פנימה רק חבילות TCP שהן <b>תשובה</b> לחיבור שנפתח מבפנים.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 270" width="720" role="img" aria-label="Stateful">
+      <g font-size="13">
+        <text x="640" y="22" text-anchor="middle" font-weight="700">Client 128.34.78.55</text><text x="80" y="22" text-anchor="middle" font-weight="700">Server 76.120.54.101</text>
+        <line x1="640" y1="30" x2="640" y2="200" stroke="var(--line)" stroke-width="2"/><rect x="350" y="30" width="20" height="170" fill="var(--warn-soft)" stroke="var(--warn)"/><line x1="80" y1="30" x2="80" y2="200" stroke="var(--line)" stroke-width="2"/>
+        <line x1="635" y1="60" x2="86" y2="60" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="53" text-anchor="middle">SYN → 80</text>
+        <line x1="86" y1="95" x2="635" y2="95" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="220" y="88" text-anchor="middle">SYN-ACK</text><text x="500" y="88" text-anchor="middle" font-size="11" fill="var(--def)">✓ מתאים לרשומה בטבלה</text>
+        <line x1="635" y1="130" x2="86" y2="130" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="123" text-anchor="middle">ACK</text>
+        <line x1="86" y1="175" x2="346" y2="175" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/><text x="220" y="168" text-anchor="middle" fill="var(--atk)">SYN-ACK מתוקף</text><text x="500" y="180" text-anchor="middle" fill="var(--atk)">✗ אין חיבור כזה בטבלה</text>
+        <rect x="150" y="210" width="420" height="52" rx="6" fill="var(--code-bg)" stroke="var(--line)"/>
+        <text x="360" y="230" text-anchor="middle" font-size="12" font-weight="700">State table</text>
+        <text x="360" y="250" text-anchor="middle" font-size="12" direction="ltr" font-family="var(--f-mono)">TCP 128.34.78.55:51234 ↔ 76.120.54.101:80 ESTABLISHED</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">UDP ב-Stateful</span><p>ב-TCP קל: SYN פותח סשן. ב-UDP אין הקמת חיבור, ולכן "סשן" מתחיל כשחבילה לגיטימית עוברת (למשל מבפנים החוצה), ומוגדר ע"י (IP מקור, פורט מקור, IP יעד, פורט יעד). תשובה עם ה-Tuple ההפוך מותרת עד Timeout.</p></div>
+  <div class="atk"><span class="tag">ניצול</span><p>טבלת המצב היא משאב סופי: SYN flood או Connection flood ממלאים אותה (State exhaustion), וה-Firewall עצמו הופך לצוואר בקבוק (פרק 05). <b>NAT Slipstreaming</b> (2020) גרם לדפדפן לשלוח חבילה שה-ALG של ה-Firewall פירש כבקשה לפתוח פורט נכנס.</p></div>
+  </div>
+<h3>מה קורה בטבלה, packet אחרי packet</h3><div class="tbl"><table><thead><tr><th>Packet</th><th>חיפוש בטבלה</th><th>תוצאה</th></tr></thead><tbody><tr><td>SYN 128.34.78.55:51000 → 76.120.54.101:80 (מבפנים)</td><td>אין רשומה; החוק מאשר יציאה ל-80</td><td>רשומה חדשה, מצב SYN_SENT</td></tr><tr><td>SYN/ACK 76.120.54.101:80 → 128.34.78.55:51000</td><td>תואם ל-tuple ההפוך</td><td>מותר, מצב ESTABLISHED</td></tr><tr><td>ACK מבחוץ ל-128.34.78.55:51001 (ACK scan)</td><td>אין רשומה תואמת</td><td>נזרק (INVALID): הטריק של stateless כבר לא עובד</td></tr><tr><td>FIN / RST, או timeout של חוסר פעילות</td><td>רשומה נמצאה</td><td>הרשומה נמחקת</td></tr></tbody></table></div>
+</section>
+
+<section id="proxy">
+  <h2><span class="n">8</span>Circuit-level gateway ו-Application-level gateway</h2>
+  <div class="grid">
+    <div class="box"><h4>Circuit-level gateway</h4><p>Proxy ברמת TCP/IP (לא אפליקציה). החבילות מגיעות ל-Gateway <b>ונעצרות שם</b>; הוא פותח חיבור חדש ליעד ומעביר סגמנטים בין שני החיבורים, רק לסוגי חיבורים מותרים. אין חיבור ישיר בין בפנים לבחוץ. דוגמה: SOCKS.</p></div>
+    <div class="box"><h4>Application-level gateway (Proxy)</h4><p>מכיר את הפרוטוקול לעומק. המשתמש מבקש מה-Proxy, ה-Proxy מאמת שהבקשה חוקית, מבצע אותה ומחזיר תשובה. צריך Proxy נפרד לכל שירות (SMTP, NNTP, DNS, NTP, FTP, Telnet); שירותים מותאמים אישית לרוב לא נתמכים. Daemon מפעיל Proxy כשמזוהה תקשורת.</p></div>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 150" width="720" role="img" aria-label="Proxy">
+      <g font-size="13">
+        <rect x="590" y="50" width="110" height="50" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="645" y="80" text-anchor="middle" font-weight="700">Client</text>
+        <rect x="280" y="35" width="160" height="80" rx="10" fill="var(--def-soft)" stroke="var(--def)" stroke-width="2"/><text x="360" y="62" text-anchor="middle" font-weight="700">Proxy</text><text x="360" y="82" text-anchor="middle" font-size="12">מפרסר, בודק, מאמת</text><text x="360" y="100" text-anchor="middle" font-size="11" fill="var(--muted)">(Bastion host)</text>
+        <rect x="20" y="50" width="110" height="50" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="75" y="80" text-anchor="middle" font-weight="700">Server</text>
+        <line x1="588" y1="75" x2="444" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar)"/><text x="515" y="67" text-anchor="middle" font-size="12">חיבור 1</text>
+        <line x1="278" y1="75" x2="134" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar)"/><text x="205" y="67" text-anchor="middle" font-size="12">חיבור 2 (חדש)</text>
+        <text x="360" y="140" text-anchor="middle" fill="var(--muted)">שני חיבורים נפרדים. חבילה מבחוץ אף פעם לא מגיעה ישירות ללקוח.</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="grid">
+    <div class="box"><h4 style="color:var(--def)">יתרונות Proxy</h4><p>ביטחון גבוה מ-Packet filter, מחליט לפי הקשר, אימות ו-Authorization ולא רק IP ופורט, צריך לבדוק רק את האפליקציות המותרות, קל לתעד ולבקר הכל.</p></div>
+    <div class="box"><h4 style="color:var(--atk)">חסרונות Proxy</h4><p>Overhead לכל חיבור (נקודת "חיבור" באמצע), Proxy לכל פרוטוקול.</p></div>
+  </div>
+  <div class="col"><div class="real"><span class="tag">עולם אמיתי</span><p>Proxy ארגוני (Squid, Zscaler) לסינון URL ו-DLP, WAF (ModSecurity, Cloudflare) מול שרתי Web שחוסם SQL Injection ו-XSS, ו-<b>NGFW</b> (Palo Alto, Check Point, Fortinet) שמזהה אפליקציות לפי תוכן (App-ID) ולא לפי פורט, ומפענח TLS (TLS inspection) כדי לבדוק תוכן מוצפן.</p></div></div>
+  <div class="col">
+  <h3>Bastion host</h3>
+  <p>מערכת שמנהל ה-Firewall הגדיר כ"נקודת חוזק קריטית". הפלטפורמה ל-Proxy, ולכן חייבת להיות מוקשחת מאוד: OS מוקשח, בלי שירותים ותוכנות מיותרים, גישה מוגבלת לדיסק (רק קריאת קבצי Config). היום: Jump server / Bastion ב-AWS לגישת SSH לרשת פרטית.</p>
+  </div>
+<div class="col"><p>על הקו יש שני חיבורי TCP עצמאיים: לקוח ↔ proxy ו-proxy ↔ שרת. השרת רואה את ה-IP של ה-proxy כמקור. שום דבר מה-packets של הלקוח (TTL, options, fragments, דגלים פגומים) לא מגיע לשרת, וזה גם מנטרל טריקים של fragments וסריקות.</p></div>
+</section>
+
+<section id="arch">
+  <h2><span class="n">9</span>ארכיטקטורות Firewall</h2>
+  <figure>
+    <svg viewBox="0 0 720 420" width="720" role="img" aria-label="Architectures">
+      <g font-size="12">
+        <text x="700" y="22" text-anchor="start" font-weight="700" font-size="13">1. Screened host, single-homed bastion</text>
+        <ellipse cx="650" cy="70" rx="55" ry="26" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="650" y="74" text-anchor="middle">Internet</text>
+        <rect x="510" y="52" width="80" height="36" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="550" y="74" text-anchor="middle">Packet filter</text>
+        <line x1="20" y1="70" x2="470" y2="70" stroke="var(--ink)" stroke-width="3"/><line x1="594" y1="70" x2="596" y2="70" stroke="var(--ink)" stroke-width="3"/><line x1="470" y1="70" x2="508" y2="70" stroke="var(--ink)" stroke-width="3"/>
+        <rect x="380" y="90" width="80" height="34" rx="6" fill="var(--def-soft)" stroke="var(--def)"/><text x="420" y="111" text-anchor="middle">Bastion</text><line x1="420" y1="70" x2="420" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="250" y="90" width="80" height="34" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="290" y="111" text-anchor="middle">Info server</text><line x1="290" y1="70" x2="290" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="60" y="90" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="135" y="111" text-anchor="middle">Internal hosts</text><line x1="135" y1="70" x2="135" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <text x="360" y="148" text-anchor="middle" fill="var(--muted)">הנתב מעביר רק חבילות מ/אל ה-Bastion. פיזית כולם על אותו סגמנט, אז נתב פרוץ = עקיפה.</text>
+
+        <text x="700" y="185" text-anchor="start" font-weight="700" font-size="13">2. Screened host, dual-homed bastion</text>
+        <ellipse cx="650" cy="225" rx="55" ry="26" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="650" y="229" text-anchor="middle">Internet</text>
+        <rect x="510" y="207" width="80" height="36" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="550" y="229" text-anchor="middle">Packet filter</text>
+        <line x1="508" y1="225" x2="470" y2="225" stroke="var(--ink)" stroke-width="3"/>
+        <rect x="380" y="207" width="90" height="36" rx="6" fill="var(--def-soft)" stroke="var(--def)" stroke-width="2"/><text x="425" y="223" text-anchor="middle">Bastion</text><text x="425" y="237" text-anchor="middle" font-size="10">2 NICs</text>
+        <line x1="378" y1="225" x2="20" y2="225" stroke="var(--ink)" stroke-width="3"/>
+        <rect x="60" y="245" width="150" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="135" y="264" text-anchor="middle">Internal hosts</text><line x1="135" y1="225" x2="135" y2="245" stroke="var(--ink)" stroke-width="2"/>
+        <text x="360" y="295" text-anchor="middle" fill="var(--muted)">חיבורים פיזיים נפרדים פנימה והחוצה: אי אפשר לעקוף את ה-Bastion גם אם הנתב נפרץ.</text>
+
+        <text x="700" y="330" text-anchor="start" font-weight="700" font-size="13">3. Screened subnet (DMZ) · הכי בטוח</text>
+        <ellipse cx="650" cy="375" rx="55" ry="26" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="650" y="379" text-anchor="middle">Internet</text>
+        <rect x="510" y="357" width="80" height="36" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="550" y="379" text-anchor="middle">Outer router</text>
+        <rect x="290" y="345" width="190" height="60" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-dasharray="5 3"/><text x="385" y="365" text-anchor="middle" font-weight="700">DMZ</text><text x="385" y="385" text-anchor="middle">Bastion · Web · Mail</text>
+        <rect x="190" y="357" width="80" height="36" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="230" y="379" text-anchor="middle">Inner router</text>
+        <rect x="20" y="357" width="140" height="36" rx="6" fill="var(--def-soft)" stroke="var(--def)"/><text x="90" y="379" text-anchor="middle">Internal network</text>
+        <g stroke="var(--ink)" stroke-width="3"><line x1="596" y1="375" x2="594" y2="375"/><line x1="508" y1="375" x2="482" y2="375"/><line x1="288" y1="375" x2="274" y2="375"/><line x1="188" y1="375" x2="164" y2="375"/></g>
+      </g>
+    </svg>
+  </figure>
+  <div class="grid">
+    <div class="box"><h4>Screened host (single-homed)</h4><p>Packet filter + Bastion. הנתב מעביר רק חבילות מ/אל ה-Bastion, וה-Bastion עושה אימות ו-Proxy. שרת מידע ציבורי יכול לשבת בין השניים. <b>ביטחון גבוה יותר</b>: גם סינון חבילות וגם אפליקציה, והתוקף צריך לחדור שתי מערכות.</p></div>
+    <div class="box"><h4>Screened host (dual-homed)</h4><p>כמו הקודם, אבל ל-Bastion יש חיבור פיזי נפרד פנימה והחוצה, כך שאי אפשר לעקוף אותו גם אם נתב הסינון נפרץ.</p></div>
+    <div class="box"><h4>Screened subnet</h4><p>שני נתבי סינון ותת-רשת מבודדת (DMZ). <b>שלוש</b> שכבות הגנה. הנתב החיצוני מפרסם לאינטרנט רק את ה-DMZ (הרשת הפנימית בלתי נראית), והפנימי מפרסם לרשת הפנימית רק את ה-DMZ (מבפנים אי אפשר לבנות נתיב ישיר לאינטרנט).</p></div>
+  </div>
+  <div class="col"><p class="note">חיבור לפרק 01: זו בדיוק <b>Layered security</b> ו-<b>Diversity of defence</b> (לשים Firewall של ספק אחר בכל שכבה).</p></div>
+</section>
+
+<section id="nat">
+  <h2><span class="n">10</span>NAT</h2>
+  <div class="col">
+  <p>מארחים מאחורי ה-Firewall משתמשים בכתובות פרטיות (RFC 1918): <code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code>. ה-NAT מתרגם אותן לכתובת "אמיתית" ולהפך. שתי סיבות: מחסור בכתובות IPv4, והסוואת כתובות פנימיות. תוצאה: מארח פנימי לא יכול לקבל חיבור שנפתח מבחוץ (ולכן לא יכול להיות שרת, אלא עם Port forwarding).</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 160" width="720" role="img" aria-label="NAT">
+      <g font-size="12" direction="ltr">
+        <rect x="560" y="50" width="150" height="50" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="635" y="72" text-anchor="middle" font-weight="700">PC</text><text x="635" y="90" text-anchor="middle" font-family="var(--f-mono)">192.168.1.10</text>
+        <rect x="290" y="35" width="150" height="80" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="2"/><text x="365" y="58" text-anchor="middle" font-weight="700">NAT / FW</text><text x="365" y="78" text-anchor="middle" font-family="var(--f-mono)" font-size="10">.10:5000 ↔ 84.1.2.3:62001</text><text x="365" y="96" text-anchor="middle" font-family="var(--f-mono)" font-size="10">public 84.1.2.3</text>
+        <rect x="20" y="50" width="150" height="50" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="95" y="72" text-anchor="middle" font-weight="700">Server</text><text x="95" y="90" text-anchor="middle" font-family="var(--f-mono)">93.184.216.34</text>
+        <line x1="558" y1="66" x2="444" y2="66" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="500" y="58" text-anchor="middle" font-family="var(--f-mono)" font-size="10">src .10:5000</text>
+        <line x1="288" y1="66" x2="174" y2="66" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="230" y="58" text-anchor="middle" font-family="var(--f-mono)" font-size="10">src 84.1.2.3:62001</text>
+        <line x1="174" y1="86" x2="288" y2="86" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><line x1="444" y1="86" x2="558" y2="86" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/>
+      </g>
+      <text x="360" y="145" text-anchor="middle" font-size="12" fill="var(--muted)">טבלת התרגום היא בפועל טבלת מצב: חבילה נכנסת בלי רשומה תואמת לא יודעת לאן ללכת</text>
+    </svg>
+  </figure>
+  <div class="col"><div class="why"><span class="tag">NAT הוא לא Firewall</span><p>ההרצאה קוראת לזה "Security through obscurity". NAT חוסם חיבורים נכנסים כתוצאת לוואי, אבל לא בודק תעבורה יוצאת (נוזקה שפותחת חיבור החוצה ל-C&amp;C עוברת חופשי), UPnP פותח פורטים אוטומטית, וב-IPv6 אין NAT בכלל.</p></div></div>
+<h3>מה בדיוק נכתב מחדש ב-header (תוספת)</h3><div class="tbl"><table><thead><tr><th>כיוון</th><th>לפני NAT</th><th>אחרי NAT</th><th>שדות שנכתבים מחדש</th></tr></thead><tbody><tr><td>יוצא</td><td>192.168.1.10:5000 → 93.184.216.34:80</td><td>84.1.2.3:62001 → 93.184.216.34:80</td><td>IP מקור, פורט TCP מקור, IP checksum, TCP checksum (הוא מכסה pseudo-header עם כתובות ה-IP)</td></tr><tr><td>תשובה נכנסת</td><td>93.184.216.34:80 → 84.1.2.3:62001</td><td>93.184.216.34:80 → 192.168.1.10:5000</td><td>IP יעד, פורט TCP יעד, שני ה-checksums</td></tr><tr><td>נכנס בלי בקשה</td><td>x → 84.1.2.3:4444</td><td>אין מיפוי</td><td>נזרק (אלא אם יש port forwarding)</td></tr></tbody></table></div><div class="col"><p>טבלת ה-NAT שומרת לכל זרימה (IP:port פנימי ↔ IP:port ציבורי ↔ IP:port מרוחק), בדיוק כמו טבלה של stateful firewall, ולכן NAT ו-stateful filtering הם בדרך כלל אותה קופסה. פרוטוקולים שנושאים כתובות IP בתוך ה-payload (FTP PORT, SIP) צריכים ALG שיכתוב גם אותן מחדש.</p></div>
+</section>
+
+<section id="ipt">
+  <h2><span class="n">11</span>מוצרים, Personal firewall ו-iptables</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>מוצר (2015)</th><th>סוג</th><th>הערות</th></tr></thead>
+    <tbody>
+      <tr><td>Check Point</td><td>Stateful + מעט Proxy</td><td>מוביל שוק (ישראלי), יקר</td></tr>
+      <tr><td>Cisco PIX (היום ASA/Firepower)</td><td>Stateful</td><td>ביצועים גבוהים, פחות ידידותי</td></tr>
+      <tr><td>Symantec Raptor</td><td>Application proxy</td><td>Windows</td></tr>
+      <tr><td>iptables (היום nftables)</td><td>Stateful</td><td>חינם, מגיע עם Linux</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <p><b>Personal firewall:</b> אפליקציה על הדסקטופ. Packet filter (לפעמים Stateful) שלומד אילו אפליקציות רשאיות לפתוח אילו חיבורים יוצאים, וחוסם נכנסים חוץ מתשובות. Windows Firewall ב-Windows, iptables ב-Linux.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 180" width="720" role="img" aria-label="iptables chains">
+      <g font-size="13" direction="ltr">
+        <rect x="20" y="70" width="90" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="65" y="95" text-anchor="middle">packet in</text>
+        <rect x="150" y="70" width="110" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="205" y="88" text-anchor="middle" font-size="12">routing</text><text x="205" y="103" text-anchor="middle" font-size="11">for me?</text>
+        <rect x="320" y="20" width="110" height="40" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="375" y="45" text-anchor="middle" font-weight="700">INPUT</text>
+        <rect x="320" y="120" width="110" height="40" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="375" y="145" text-anchor="middle" font-weight="700">FORWARD</text>
+        <rect x="470" y="20" width="110" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="525" y="45" text-anchor="middle">local process</text>
+        <rect x="600" y="70" width="100" height="40" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="650" y="95" text-anchor="middle" font-weight="700">OUTPUT</text>
+        <rect x="600" y="125" width="100" height="40" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="650" y="150" text-anchor="middle">packet out</text>
+        <g stroke="var(--muted)" stroke-width="1.8" fill="none"><line x1="110" y1="90" x2="146" y2="90" marker-end="url(#ar)"/><path d="M260,82 L318,45" marker-end="url(#ar)"/><path d="M260,98 L318,138" marker-end="url(#ar)"/><line x1="430" y1="40" x2="466" y2="40" marker-end="url(#ar)"/><path d="M580,45 L640,68" marker-end="url(#ar)"/><line x1="650" y1="110" x2="650" y2="123" marker-end="url(#ar)"/><line x1="430" y1="145" x2="596" y2="145" marker-end="url(#ar)"/></g>
+        <text x="290" y="58" text-anchor="middle" font-size="11" fill="var(--muted)">yes</text><text x="290" y="130" text-anchor="middle" font-size="11" fill="var(--muted)">no (router)</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+<pre># iptables -L -n -v           # הצגת החוקים: -L רשימה, -v פירוט, -n בלי DNS (מהיר)
+# service iptables stop|start|restart
+
+# חסימת תוקף
+iptables -A INPUT -s 1.2.3.4 -j DROP
+iptables -A INPUT -s 192.168.0.0/24 -j DROP
+
+# חסימת פורט 80 (בכל הממשקים / רק ב-eth1)
+iptables -A INPUT -p tcp --dport 80 -j DROP
+iptables -A INPUT -i eth1 -p tcp --dport 80 -j DROP
+
+# חסימת Ping
+iptables -A INPUT -p icmp --icmp-type echo-request -j DROP</pre>
+  <p>ובצורה Stateful ו-Default-deny (תוספת, מה שבאמת מגדירים בשרת):</p>
+<pre>iptables -P INPUT DROP                                           # מדיניות ברירת מחדל: Whitelist
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -p tcp --dport 22 -s 10.0.0.0/8 -j ACCEPT       # SSH רק מבפנים
+iptables -A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT
+iptables -A INPUT -p tcp --syn -m limit --limit 20/s -j ACCEPT    # הגבלת SYN</pre>
+  <p class="note">שימו לב: בפלט של ההרצאה <code>policy ACCEPT</code> בכל השרשראות. זו מערכת בלי Firewall בפועל (Blacklist ריק).</p>
+  </div>
+</section>
+
+<section id="limits">
+  <h2><span class="n">12</span>המגבלות של Firewall</h2>
+  <div class="grid">
+    <div class="box"><h4>איום מבפנים</h4><p>חסר תועלת נגד תוקף בפנים או קוד זדוני שרץ על מכונה פנימית (עובד ממורמר). ארגונים עם איום פנימי גבוה: בנקים וצבא.</p></div>
+    <div class="box"><h4>עקיפה</h4><p>מודמים, Wi-Fi, ושירותים "מהימנים" כמו <b>SSH tunnelling</b> (<code>ssh -D</code>), DNS tunnelling, HTTPS לשרת C&amp;C.</p></div>
+    <div class="box"><h4>תעבורה מוצפנת</h4><p>לא יכול לבדוק תוכן מוצפן (אלא אם עושים TLS inspection).</p></div>
+    <div class="box"><h4>הכל על פורט 80/443</h4><p>יותר ויותר שירותים עוברים על HTTP, ולכן חסימה לפי פורט לא אומרת כלום.</p></div>
+    <div class="box"><h4>נוזקות</h4><p>לא יכול לבדוק כל קובץ נגוע, בגלל מגוון ה-OS וסוגי הקבצים.</p></div>
+    <div class="box"><h4>ניידות ומורכבות</h4><p>עבודה מהבית, מכשירים ניידים (אין "היקף"). שירותים נחסמים ואנשים מתלוננים. מוסיף מורכבות וסיכון לטעויות.</p></div>
+  </div>
+  <div class="col"><div class="real"><span class="tag">התשובה המודרנית</span><p><b>Zero Trust</b>: אין "פנים" מהימן. כל בקשה מאומתת לפי זהות, מכשיר והקשר (Google BeyondCorp). בנוסף מיקרו-סגמנטציה, EDR על התחנות, ו-SASE (Firewall בענן שהולך עם המשתמש).</p></div></div>
+</section>
+
+<section id="quiz">
+  <h2><span class="n">13</span>Quiz מההרצאה: איזה Firewall צריך?</h2>
+  <div class="col"><div class="why"><span class="tag">שיטת ההחלטה</span><ol><li>האם מידע משכבות 3–4 מספיק כדי לזהות את התקיפה? אם כן, Packet filter.</li><li>האם צריך לזכור מצב (היסטוריה, מונים)? אם כן, Stateful. אם לא, Stateless מספיק.</li><li>אם צריך לבדוק Payload, Application proxy.</li></ol></div></div>
+  <div class="tbl"><table>
+    <thead><tr><th>תקיפה</th><th>Stateless?</th><th>Stateful?</th><th>Proxy?</th><th>הסבר</th></tr></thead>
+    <tbody>
+      <tr><td>SYN flood מבחוץ</td><td style="color:var(--atk)">לא</td><td style="color:var(--def)">כן</td><td>-</td><td>מונים של SYN-FIN או SYN–SYN/ACK (פרק 05) הם מידע משכבה 4, אבל צריך לשמור מונים לאורך זמן.</td></tr>
+      <tr><td>Smurf מבחוץ</td><td style="color:var(--def)">כן</td><td>-</td><td>-</td><td>מספיק לחסום כל תעבורה לכתובת Broadcast. חוק אחד בלי זיכרון.</td></tr>
+      <tr><td>BitTorrent / P2P</td><td style="color:var(--atk)">לא</td><td style="color:var(--atk)">לא</td><td style="color:var(--def)">כן</td><td>צריך לזהות חתימות של הפרוטוקול ב-Payload (הוא משתמש בפורטים אקראיים).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="ac">
+  <h2><span class="n">14</span>Access Control</h2>
+  <div class="col">
+  <p><b>הגדרה:</b> מניעת שימוש לא מורשה במשאב. שירות שקובע <b>מי</b> יכול לגשת, <b>באילו תנאים</b>, ו<b>מה מותר לו לעשות</b>. דוגמה: הרשאות קבצים (user/group/others × read/write/execute); קובץ בשרת Web קריא לכולם וכתיב רק לקבוצת העיצוב. הכל חייב להתאים למדיניות האבטחה.</p>
+  <h3>Access Matrix</h3>
+  <p>ארבעה רכיבים: <b>Object</b> (מה שמוגן: קבצים, שרתים), <b>Subject</b> (מי ניגש: משתמשים, תהליכים), <b>Function</b> (read, write, delete...), והמטריצה עצמה (שורות = Subjects, עמודות = Objects).</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 230" width="720" role="img" aria-label="Access matrix">
+      <g font-size="13" direction="ltr">
+        <rect x="140" y="20" width="440" height="190" fill="var(--surface)" stroke="var(--line)"/>
+        <rect x="140" y="20" width="140" height="40" fill="var(--code-bg)" stroke="var(--line)"/><rect x="280" y="20" width="150" height="40" fill="var(--accent-soft)" stroke="var(--accent)"/><rect x="430" y="20" width="150" height="40" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="210" y="45" text-anchor="middle" font-weight="700">Subject \ Object</text><text x="355" y="45" text-anchor="middle" font-weight="700">index.html</text><text x="505" y="45" text-anchor="middle" font-weight="700">process.cgi</text>
+        <g stroke="var(--line)"><line x1="140" y1="100" x2="580" y2="100"/><line x1="140" y1="140" x2="580" y2="140"/><line x1="280" y1="20" x2="280" y2="210"/><line x1="430" y1="20" x2="430" y2="210"/></g>
+        <rect x="140" y="60" width="140" height="150" fill="var(--warn-soft)" stroke="var(--warn)"/>
+        <text x="210" y="85" text-anchor="middle" font-weight="700">Joe Bloggs</text><text x="210" y="125" text-anchor="middle" font-weight="700">Mary Smith</text><text x="210" y="180" text-anchor="middle" font-weight="700">Joan Jones</text>
+        <text x="355" y="85" text-anchor="middle">read, write</text><text x="505" y="85" text-anchor="middle">execute</text>
+        <text x="355" y="125" text-anchor="middle">read</text><text x="505" y="125" text-anchor="middle" fill="var(--muted)">—</text>
+        <text x="355" y="170" text-anchor="middle">read, write, execute,</text><text x="355" y="188" text-anchor="middle">list, delete</text><text x="505" y="180" text-anchor="middle">read, execute</text>
+        <path d="M600,40 L600,200" stroke="var(--accent)" stroke-width="3" marker-end="url(#ar)"/><text x="660" y="125" text-anchor="middle" fill="var(--accent)" font-family="var(--f-body)">ACL</text><text x="660" y="142" text-anchor="middle" fill="var(--accent)" font-size="11" font-family="var(--f-body)">(עמודה)</text>
+        <path d="M150,222 L570,222" stroke="var(--warn)" stroke-width="3" marker-end="url(#ar)"/><text x="70" y="226" text-anchor="middle" fill="var(--warn)" font-family="var(--f-body)">Capability (שורה)</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="grid">
+    <div class="box"><h4>ACL (Access Control List)</h4><p>ממוקד ב<b>אובייקט</b>: לכל אובייקט רשימה של מי ומה.<br><code>index.html: Joe(rw), Mary(r), Joan(rwxld)</code><br>הנפוץ ביותר: מערכות קבצים, DB, חוקי Firewall (!).</p><p class="note">קל לשאול "מי יכול לגשת לקובץ X?", קשה לשאול "לְמה Joe יכול לגשת?".</p></div>
+    <div class="box"><h4>Capability List</h4><p>ממוקד ב<b>נושא</b>: לכל משתמש רשימה של מה הוא יכול.<br><code>Joe: index.html(rw), process.cgi(x)</code><br>פחות נפוץ. ה-Key ring של PGP הוא סוג של Capability list. היום: OAuth tokens, Kerberos tickets.</p></div>
+  </div>
+  <div class="col">
+  <h3>RBAC: Role-Based Access Control</h3>
+  <p>משתמשים משויכים ל<b>תפקידים</b>, וההרשאות ניתנות לתפקידים ולא לאנשים. תפקיד לפי משרה (מנהל מערכת, מנהל סניף, טלר) או לפי משימה (גיבוי, הזנת נתונים, אישור הלוואות).</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 200" width="720" role="img" aria-label="RBAC">
+      <g font-size="13">
+        <text x="640" y="22" text-anchor="middle" font-weight="700">Users</text><text x="390" y="22" text-anchor="middle" font-weight="700">Roles (עם ירושה)</text><text x="110" y="22" text-anchor="middle" font-weight="700">Permissions</text>
+        <rect x="590" y="40" width="100" height="32" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="640" y="61" text-anchor="middle">John</text>
+        <rect x="590" y="90" width="100" height="32" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="640" y="111" text-anchor="middle">Anne</text>
+        <rect x="590" y="140" width="100" height="32" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="640" y="161" text-anchor="middle">Dana</text>
+        <rect x="320" y="40" width="140" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="390" y="61" text-anchor="middle">Bank employee</text>
+        <rect x="320" y="90" width="140" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="390" y="111" text-anchor="middle">Bank teller</text>
+        <rect x="320" y="140" width="140" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="390" y="161" text-anchor="middle">Supervisor</text>
+        <g stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"><line x1="390" y1="88" x2="390" y2="76" marker-end="url(#ar)"/><line x1="390" y1="138" x2="390" y2="126" marker-end="url(#ar)"/></g>
+        <text x="475" y="85" font-size="10" fill="var(--accent)" text-anchor="end">inherits</text>
+        <rect x="20" y="40" width="180" height="32" rx="6" fill="var(--def-soft)" stroke="var(--def)"/><text x="110" y="61" text-anchor="middle">Read balances</text>
+        <rect x="20" y="90" width="180" height="32" rx="6" fill="var(--def-soft)" stroke="var(--def)"/><text x="110" y="111" text-anchor="middle">Debit / Credit</text>
+        <rect x="20" y="140" width="180" height="32" rx="6" fill="var(--def-soft)" stroke="var(--def)"/><text x="110" y="161" text-anchor="middle">Create / Delete accounts</text>
+        <g stroke="var(--muted)" stroke-width="1.8"><line x1="588" y1="106" x2="464" y2="106" marker-end="url(#ar)"/><line x1="588" y1="56" x2="464" y2="100" marker-end="url(#ar)"/><line x1="588" y1="156" x2="464" y2="156" marker-end="url(#ar)"/>
+        <line x1="318" y1="56" x2="204" y2="56" marker-end="url(#ar)"/><line x1="318" y1="106" x2="204" y2="106" marker-end="url(#ar)"/><line x1="318" y1="156" x2="204" y2="156" marker-end="url(#ar)"/></g>
+        <text x="360" y="195" text-anchor="middle" fill="var(--muted)">Teller יורש מ-Employee, Supervisor יורש מ-Teller. עובד חדש = לשייך לתפקיד, בלי לגעת בהרשאות.</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+  <p><b>תכונות RBAC:</b> גמיש מאוד, משקף את מבנה הארגון, ומפחית טעויות ניהול כי ההרשאות ניתנות לקבוצות. דוגמה מההרצאה: <code>tomcat-users.xml</code> מגדיר roles ומשייך משתמשים אליהם.</p>
+<pre>&lt;tomcat-users&gt;
+  &lt;role rolename="manager" /&gt; &lt;role rolename="admin" /&gt;
+  &lt;user username="tomcat" password="tomcat" roles="tomcat" /&gt;
+&lt;/tomcat-users&gt;</pre>
+  <div class="atk"><span class="tag">ניצול</span><p>שימו לב לדוגמה עצמה: <b>סיסמה בטקסט גלוי</b> ו-<code>tomcat/tomcat</code> הם בדיוק מה שסורקים מחפשים. Tomcat Manager עם סיסמת ברירת מחדל = העלאת WAR זדוני = הרצת קוד. שאר התקיפות על בקרת גישה: Privilege escalation, IDOR, ו-Role explosion (יותר מדי תפקידים שאף אחד לא מבין).</p></div>
+  <p><b>XACML</b> (eXtensible Access Control Markup Language): שפת מדיניות סטנדרטית מבוססת XML של OASIS. המטרה: להגדיר חוקי גישה באופן אחיד שאפשר לשתף בין אפליקציות ומכשירים שונים, במקום מימוש ספציפי לכל טכנולוגיה. היום ממשיכים את הרעיון ABAC (לפי תכונות) ו-OPA/Rego.</p>
+  </div>
+</section>
+
+<section id="review">
+  <h2><span class="n">15</span>חזרה מהירה למבחן</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>שאלה</th><th>תשובה קצרה</th></tr></thead>
+    <tbody>
+      <tr><td>Accept / Drop / Reject?</td><td>עובר / נחסם בשקט / נחסם + ICMP unreachable.</td></tr>
+      <tr><td>Whitelist מול Blacklist?</td><td>Default-deny (בטוח, צריך לחשוב על הכל) מול Default-allow (גמיש, מפספס).</td></tr>
+      <tr><td>4 מאפייני שליטה?</td><td>Service, Direction, User, Behaviour.</td></tr>
+      <tr><td>מה שמים ב-DMZ?</td><td>Mail, Web, DNS, VoIP. שרתים ציבוריים ומסוכנים.</td></tr>
+      <tr><td>3 סוגי Firewall?</td><td>Packet filter (רשת), Circuit-level (תעבורה), Application gateway (אפליקציה).</td></tr>
+      <tr><td>איך Stateless חוסם חיבורים נכנסים?</td><td>מכניס רק חבילות עם ACK דולק.</td></tr>
+      <tr><td>יתרונות/חסרונות Stateless?</td><td>זול, פשוט, שקוף, מהיר / קשה להגדיר, מתעלם מתוכן, אין אימות, פגיע לזיוף.</td></tr>
+      <tr><td>Stateful מול Stateless?</td><td>Stateful שומר טבלת חיבורים ומכניס רק תשובות לחיבורים קיימים.</td></tr>
+      <tr><td>Bastion host?</td><td>מערכת מוקשחת שמריצה את ה-Proxy; בלי שירותים מיותרים.</td></tr>
+      <tr><td>הארכיטקטורה הכי בטוחה?</td><td>Screened subnet: שני נתבים ו-DMZ, שלוש שכבות.</td></tr>
+      <tr><td>טווחי RFC 1918?</td><td>10/8, 172.16/12, 192.168/16.</td></tr>
+      <tr><td>SYN flood / Smurf / BitTorrent?</td><td>Stateful / Stateless / Proxy.</td></tr>
+      <tr><td>ACL מול Capability?</td><td>לפי אובייקט (עמודה) מול לפי נושא (שורה).</td></tr>
+      <tr><td>RBAC?</td><td>הרשאות לתפקידים, משתמשים לתפקידים, עם ירושה.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src col">מקור: "08 Firewalls 2015-07.pdf" (85 שקפים). iptables Stateful, NGFW, Zero Trust, NAT Slipstreaming ושאר "עולם אמיתי" הם תוספות שלי.</p>
+<div class="col"><p>ועוד שאלה: מה NAT כותב מחדש ביציאה? IP מקור, פורט מקור, ו-checksums של IP ו-TCP/UDP.</p></div>
+</section>

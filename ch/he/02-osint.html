@@ -1,0 +1,234 @@
+<header class="top">
+  <div class="eyebrow">פרק 02</div>
+  <h1>איסוף מודיעין ו-OSINT</h1>
+  <p class="lead">לפני כל תקיפה יש סיור. הפרק עוסק במה תוקף מחפש על ארגון ועל אנשים, בשלוש רמות הסיור (פסיבי, חצי-פסיבי, אקטיבי) ובכלים לכל רמה, ובהנדסה חברתית שהופכת את המידע לגישה.</p>
+  <nav class="toc" aria-label="תוכן עניינים">
+    <a href="#why">למה סיור</a><a href="#levels">3 רמות</a><a href="#targets">מה מחפשים</a><a href="#people">OSINT על אנשים</a><a href="#stuxnet">Stuxnet</a><a href="#passive">כלים פסיביים</a><a href="#active">סיור אקטיבי</a><a href="#se">הנדסה חברתית</a><a href="#tree">עץ תקיפה</a><a href="#review">חזרה</a>
+  </nav>
+</header>
+
+<section id="why">
+  <h2><span class="n">1</span>Reconnaissance: למה תוקף מתחיל בסיור</h2>
+  <div class="col">
+  <p>במילון אוקספורד, סיור הוא איסוף מידע על אזור למטרות צבאיות. תקיפת סייבר לא שונה מתקיפה צבאית: התוקף משקיע <b>הרבה זמן</b> בתצפית ובבדיקת הרשת של היעד, כי הוא צריך הערכה טובה של החוזקות והחולשות של "האויב" לפני שהוא פועל.</p>
+  <p><b>OSINT (Open Source INTelligence)</b> הוא איתור, בחירה ואיסוף של מידע ממקורות <b>גלויים לציבור</b>, וניתוח שלו כדי לייצר מודיעין צבאי, מדיני או עסקי שימושי.</p>
+  <div class="why"><span class="tag">למה זה עובד</span><p>כל פיסת מידע לבד נראית תמימה: משרה פתוחה, תמונה מהמשרד, רשומת DNS. ביחד הן מרכיבות מפה של הארגון: אילו טכנולוגיות יש, מי עובד שם, מי בעל גישה, ואיך נראה מייל לגיטימי. ככל שהסיור טוב יותר, התקיפה עצמה קצרה ושקטה יותר.</p></div>
+  <div class="real"><span class="tag">עולם אמיתי</span><p>במודל Cyber Kill Chain של Lockheed Martin ובמטריצת MITRE ATT&amp;CK, Reconnaissance הוא השלב הראשון. צוותי Red Team ו-Pentest מתחילים כל עבודה בשלב OSINT, וצוותי Threat Intelligence עושים את אותו דבר על הארגון שלהם כדי לראות מה התוקף יראה.</p></div>
+  </div>
+</section>
+
+<section id="levels">
+  <h2><span class="n">2</span>שלוש רמות סיור</h2>
+  <figure>
+    <svg viewBox="0 0 720 210" width="720" role="img" aria-label="רמות סיור">
+      <defs><linearGradient id="g1" x1="1" x2="0"><stop offset="0" stop-color="var(--def)"/><stop offset=".5" stop-color="var(--warn)"/><stop offset="1" stop-color="var(--atk)"/></linearGradient></defs>
+      <rect x="30" y="40" width="660" height="14" rx="7" fill="url(#g1)"/>
+      <text x="690" y="30" text-anchor="start" font-size="12" fill="var(--muted)">לא נראה ליעד</text>
+      <text x="30" y="30" text-anchor="end" font-size="12" fill="var(--muted)">היעד יכול לזהות</text>
+      <g>
+        <rect x="480" y="75" width="210" height="120" rx="10" fill="var(--def-soft)" stroke="var(--def)"/>
+        <text x="585" y="100" text-anchor="middle" font-weight="700">Passive</text>
+        <text x="585" y="122" text-anchor="middle" font-size="12">לא נוגעים ביעד בכלל</text>
+        <text x="585" y="145" text-anchor="middle" font-size="12" fill="var(--muted)">WHOIS, Google, LinkedIn,</text>
+        <text x="585" y="163" text-anchor="middle" font-size="12" fill="var(--muted)">Shodan, רשתות חברתיות</text>
+        <rect x="255" y="75" width="210" height="120" rx="10" fill="var(--warn-soft)" stroke="var(--warn)"/>
+        <text x="360" y="100" text-anchor="middle" font-weight="700">Semi-passive</text>
+        <text x="360" y="122" text-anchor="middle" font-size="12">נראה כמו גלישה רגילה</text>
+        <text x="360" y="145" text-anchor="middle" font-size="12" fill="var(--muted)">גלישה באתר, שאילתות DNS,</text>
+        <text x="360" y="163" text-anchor="middle" font-size="12" fill="var(--muted)">קריאת מסמכים פומביים</text>
+        <rect x="30" y="75" width="210" height="120" rx="10" fill="var(--atk-soft)" stroke="var(--atk)"/>
+        <text x="135" y="100" text-anchor="middle" font-weight="700">Active</text>
+        <text x="135" y="122" text-anchor="middle" font-size="12">פונים ישירות ליעד</text>
+        <text x="135" y="145" text-anchor="middle" font-size="12" fill="var(--muted)">Nmap, Banner grabbing,</text>
+        <text x="135" y="163" text-anchor="middle" font-size="12" fill="var(--muted)">Zone transfer, סריקת פגיעויות</text>
+      </g>
+    </svg>
+    <figcaption>ההרצאה: Passive לעולם לא אמור להתגלות. Semi-passive אמור להיראות כמו תעבורה רגילה. Active צפוי להתגלות (IDS, לוגים).</figcaption>
+  </figure>
+  <p class="col">ההיגיון: ככל שמתקדמים ימינה-לשמאלה מקבלים מידע <b>מדויק ועדכני</b> יותר, אבל משלמים ב<b>חשיפה</b>. תוקף מתוחכם ממצה קודם את הפסיבי, ורק אז נוגע ביעד, ממוקד ובקצב איטי.</p>
+</section>
+
+<section id="targets">
+  <h2><span class="n">3</span>מה מחפשים על ארגון</h2>
+  <figure>
+    <svg viewBox="0 0 700 330" width="700" role="img" aria-label="מפת מטרות">
+      <circle cx="350" cy="165" r="62" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="350" y="160" text-anchor="middle" font-weight="700">הארגון</text><text x="350" y="180" text-anchor="middle" font-size="12" fill="var(--muted)">Target</text>
+      <g font-size="13" stroke="var(--line)">
+        <line x1="350" y1="103" x2="350" y2="45"/><line x1="402" y1="130" x2="530" y2="60"/><line x1="412" y1="165" x2="560" y2="165"/><line x1="402" y1="200" x2="530" y2="275"/><line x1="350" y1="227" x2="350" y2="290"/><line x1="298" y1="200" x2="170" y2="275"/><line x1="288" y1="165" x2="140" y2="165"/><line x1="298" y1="130" x2="170" y2="60"/>
+      </g>
+      <g font-size="13">
+        <rect x="280" y="18" width="140" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="350" y="38" text-anchor="middle">Domain names</text>
+        <rect x="480" y="40" width="190" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="575" y="60" text-anchor="middle">Internet footprint (IP, שרתים)</text>
+        <rect x="560" y="150" width="125" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="622" y="170" text-anchor="middle">כתובות מייל</text>
+        <rect x="470" y="262" width="200" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="570" y="282" text-anchor="middle">מבנה ארגוני וקשרים</text>
+        <rect x="265" y="290" width="170" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="350" y="310" text-anchor="middle">רשתות חברתיות</text>
+        <rect x="30" y="262" width="200" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="130" y="282" text-anchor="middle">מוצרים ושירותים</text>
+        <rect x="15" y="150" width="125" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="77" y="170" text-anchor="middle">משרות פתוחות</text>
+        <rect x="30" y="40" width="200" height="30" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="130" y="60" text-anchor="middle">מיקומים פיזיים ו-Datacenter</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="grid">
+    <div class="box"><h4>Corporate OSINT · פיזי</h4><p>מיקומים, פריסה (כמה סניפים), מתחרים.</p></div>
+    <div class="box"><h4>Corporate OSINT · לוגי</h4><p>קו מוצרים, משרות פתוחות, פגישות, תרומות וקשרים.</p></div>
+  </div>
+  <div class="col">
+  <div class="atk"><span class="tag">ניצול</span><p><b>משרות פתוחות</b> הן מכרה זהב: "דרוש מנהל רשת עם ניסיון ב-Cisco ASA, VMware ו-SAP" מגלה בדיוק מה מותקן. <b>מבנה ארגוני</b> מגלה למי להתחזות (המנכ"ל) ואת מי לתקוף (מזכירה, כספים). <b>פורמט כתובות מייל</b> (first.last@) מאפשר לייצר רשימת יעדים לפישינג.</p></div>
+  <h3>Maltego</h3>
+  <p>כלי ויזואלי שמקבל "ישות" (דומיין, אדם, מייל) ומריץ עליה Transforms שמוצאים ישויות קשורות: תתי-דומיינים, כתובות IP, מיילים, פרופילים. התוצאה היא גרף קשרים של הארגון. דוגמה מההרצאה: אתר של רשת חברתית רוסית ש"התנדב" לחשוף באילו תוכנות הוא משתמש.</p>
+  </div>
+</section>
+
+<section id="people">
+  <h2><span class="n">4</span>OSINT על אנשים</h2>
+  <div class="col">
+  <p>מידע על עובדים הוא גם מידע על המעסיק. העובד הוא בדרך כלל הדלת הכי קלה לארגון.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>מקור</th><th>מה לומדים</th><th>איך משתמשים בזה בתקיפה</th></tr></thead>
+    <tbody>
+      <tr><td>רשתות חברתיות</td><td>מיקומים (Metadata ו-GPS בתמונות), שגרת יום, עם מי נפגש, צ'ק-אינים, סגנון חברתי (סמכותי, נשלט)</td><td>תזמון תקיפה, התחזות לחבר, "Please Rob Me": לדעת מתי הבית ריק</td></tr>
+      <tr><td>פסקי דין, תביעות, תרומות, שיוך מפלגתי</td><td>פרטים אישיים ורגישים</td><td>סחיטה, פרטקסטינג אמין</td></tr>
+      <tr><td>הכשרות וקורסים (LinkedIn)</td><td>הידע של האדם, הקשרים העסקיים שלו</td><td>הצעת עבודה מזויפת, הזמנה לכנס עם קובץ זדוני</td></tr>
+      <tr><td>שמות משתמש בפורומים, בלוגים, רשימות תפוצה</td><td>העדפות לשמות משתמש, טכנולוגיות ותחביבים</td><td>ניחוש סיסמאות (שם הכלב + שנה), מציאת חשבונות נוספים</td></tr>
+      <tr><td>מיילים פרטיים ועבודה, אתר ו-IP אישי</td><td>נקודות כניסה נוספות</td><td>Spear phishing מותאם אישית, תקיפת מחשב ביתי</td></tr>
+      <tr><td>לימודים, חברים, משפחה</td><td>מעגלי היכרות</td><td>"היי, למדנו יחד ב-HIT..."</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <div class="real"><span class="tag">עולם אמיתי</span><p>כלים: Pipl ו-PeopleFinder (חיפוש אנשים), theHarvester (מיילים ותתי-דומיינים), Sherlock (שם משתמש בכל הרשתות), ExifTool (Metadata מתמונות ומסמכים). יש חברות שמוכרות דוח מלא על אדם. <b>Covert gathering</b>: איסוף בשטח (Onsite, למשל Wi-Fi ברכב ליד הבניין) מול מרחוק (Offsite, Google Earth ו-Street View).</p></div>
+  <div class="def"><span class="tag">הגנה</span><p>מדיניות פרסום לעובדים, הסרת Metadata ממסמכים פומביים, הדרכות מודעות, מיילים לא צפויים (לא first.last), ומעקב אחרי מה שהארגון חושף (Attack Surface Management).</p></div>
+  </div>
+</section>
+
+<section id="stuxnet">
+  <h2><span class="n">5</span>Stuxnet כדוגמה ל-OSINT</h2>
+  <div class="col">
+  <p>Stuxnet היה תולעת שתקפה את הצנטריפוגות במתקן ההעשרה בנתנז באיראן (התגלתה ב-2010). היא שינתה את מהירות הסיבוב דרך בקרי Siemens PLC, והציגה למפעילים ערכים "תקינים".</p>
+  <p>ההרצאה מראה תמונות פומביות מביקור של נשיא איראן במתקן: על המסכים ברקע רואים את ממשק ה-SCADA עם מבנה מערכי הצנטריפוגות, ובתמונה אחרת את רכיבי הבקרה. החוקר <b>Ralph Langner</b> השתמש בדיוק בתמונות כאלה כדי להבין שהתולעת מכוונת לתצורה הספציפית של נתנז (כמות הצנטריפוגות בכל מערך).</p>
+  <div class="why"><span class="tag">הלקח</span><p>גם מתקן סודי ביותר דולף מידע טכני דרך תמונות יחסי ציבור. מי שבנה את התקיפה צריך היה לדעת את התצורה המדויקת, ומי שחקר אותה הצליח לאמת זאת ממקורות גלויים.</p></div>
+  </div>
+</section>
+
+<section id="passive">
+  <h2><span class="n">6</span>כלי סיור פסיבי</h2>
+  <div class="grid">
+    <div class="box"><h4>WHOIS (RFC 3912)</h4><p>מי רשם את הדומיין: שם, כתובת, טלפון, מייל של איש קשר טכני ומנהלי, שרתי DNS, תאריכים. בדוגמה: hit.ac.il חושף שם ומספר טלפון של אחראי.</p><p class="note">ניצול: שם אמיתי ומייל לפישינג, טלפון לפרטקסטינג. היום רוב הרשמים מסתירים פרטים (Privacy, GDPR).</p></div>
+    <div class="box"><h4>NsLookup / dig</h4><p>שאילתות DNS: <code>A</code> (דומיין ל-IP), <code>MX</code> (שרתי מייל), <code>NS</code> (שרתי DNS מוסמכים), <code>SOA</code> (מידע מוסמך על האזור), Reverse DNS (IP לדומיין).</p><p class="note">ניצול: MX מגלה ספק מייל (Office 365?), Reverse DNS מגלה שמות שרתים פנימיים.</p></div>
+    <div class="box"><h4>Google Dorking</h4><p><code>site:hit.ac.il</code> מציג את כל תתי-הדומיינים המאונדקסים. וגם <code>filetype:pdf</code>, <code>intitle:"index of"</code>, <code>"@hit.ac.il"</code>.</p><p class="note">ניצול: מסמכים שלא היו אמורים להיות ציבוריים, דפי Login שכוחים, קבצי Config.</p></div>
+    <div class="box"><h4>Subdomain enumeration</h4><p>Knock script ודומיו מנסים מילון שמות (mail, vpn, dev, test) ומוצאים תתי-דומיינים וכתובות. היום גם crt.sh (Certificate Transparency).</p><p class="note">ניצול: <code>dev.</code> או <code>test.</code> פחות מוגנים מהאתר הראשי.</p></div>
+    <div class="box"><h4>עובדים (LinkedIn, אתר הארגון)</h4><p>מי עובד איפה ובאיזה תפקיד. בדוגמה: חיפוש "Holon Institute of Technology" ב-LinkedIn.</p><p class="note">ניצול: רשימת יעדים לפישינג ושמות להתחזות.</p></div>
+    <div class="box"><h4>Shodan</h4><p>"מנוע חיפוש למכשירים": סורק את כל האינטרנט ושומר Banners. מוצא מצלמות, נתבים, מערכות SCADA ושרתים לפי גרסה ומיקום.</p><p class="note">ניצול: <code>port:3389 country:IL</code> או גרסה פגיעה ספציפית, ובלי לשלוח חבילה אחת ליעד.</p></div>
+  </div>
+  <div class="col">
+  <div class="why"><span class="tag">למה Shodan עדיין "פסיבי"</span><p>Shodan כבר סרק את היעד. התוקף רק שואל את ה-DB של Shodan, ולכן היעד לא רואה שום תעבורה ממנו. זה אותו עיקרון שהופך את כל הכלים בסעיף הזה לבלתי ניתנים לזיהוי.</p></div>
+  <p><b>Semi-passive:</b> גלישה באתר הארגון כמו כל משתמש. דוגמה מההרצאה: אתר HIT עצמו מגלה שמות סגל, מבנה מחלקות ושירותים. היעד רואה בלוגים רק "עוד מבקר".</p>
+  </div>
+</section>
+
+<section id="active">
+  <h2><span class="n">7</span>סיור אקטיבי</h2>
+  <div class="col">
+  <p><b>Port scanning עם Nmap</b>: שולחים חבילות לפורטים ובודקים מה עונה. התוצאה: לכל פורט מצב <code>open</code>, <code>closed</code> או <code>filtered</code>, ושם השירות (http, ssh, smtp). פרק 03 מרחיב.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 700 300" width="700" role="img" aria-label="מצבי פורט">
+      <g font-size="13">
+        <text x="600" y="22" text-anchor="middle" font-weight="700">Scanner</text><text x="100" y="22" text-anchor="middle" font-weight="700">Target</text>
+        <line x1="600" y1="30" x2="600" y2="290" stroke="var(--line)" stroke-width="2"/><line x1="100" y1="30" x2="100" y2="290" stroke="var(--line)" stroke-width="2"/>
+        <text x="690" y="62" text-anchor="start" font-weight="700" fill="var(--def)">open</text>
+        <line x1="595" y1="55" x2="106" y2="55" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="350" y="48" text-anchor="middle">SYN → port 80</text>
+        <line x1="106" y1="85" x2="595" y2="85" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="350" y="78" text-anchor="middle" fill="var(--def)">SYN/ACK</text>
+        <text x="690" y="147" text-anchor="start" font-weight="700" fill="var(--warn)">closed</text>
+        <line x1="595" y1="140" x2="106" y2="140" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="350" y="133" text-anchor="middle">SYN → port 23</text>
+        <line x1="106" y1="170" x2="595" y2="170" stroke="var(--warn)" stroke-width="2" marker-end="url(#ar)"/><text x="350" y="163" text-anchor="middle" fill="var(--warn)">RST/ACK</text>
+        <text x="690" y="232" text-anchor="start" font-weight="700" fill="var(--atk)">filtered</text>
+        <line x1="595" y1="225" x2="260" y2="225" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="430" y="218" text-anchor="middle">SYN → port 445</text>
+        <rect x="236" y="205" width="20" height="60" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="246" y="285" text-anchor="middle" font-size="11" fill="var(--atk)">Firewall</text>
+        <text x="430" y="255" text-anchor="middle" fill="var(--muted)">(אין תשובה, או ICMP unreachable)</text>
+      </g>
+    </svg>
+    <figcaption>כך בודקים ב-Wireshark אם פורט פתוח: SYN/ACK = פתוח, RST = סגור, שקט = מסונן ע"י Firewall.</figcaption>
+  </figure>
+  <div class="col">
+  <h3>Banner Grabbing עם NetCat</h3>
+<pre>$ nc 192.168.100.194 80
+HEAD / HTTP/1.1
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/html; charset=us-ascii
+Server: Microsoft-HTTPAPI/2.0      ← גילינו מערכת וגרסה
+Date: Fri, 01 Mar 2013 12:49:07 GMT
+Connection: close</pre>
+  <p>הטכניקה מההרצאה: <b>לשלוח בקשה תקולה ולקבל הודעת שגיאה שחושפת מידע</b>. הבקשה כאן חסרה <code>Host</code>, השרת מחזיר 400 וב-Header של <code>Server</code> מגלה מה הוא.</p>
+  <div class="atk"><span class="tag">ניצול</span><p>גרסה מדויקת → חיפוש ב-Exploit-DB או CVE → Exploit מוכן. זה מה שהופך סיור לתקיפה.</p></div>
+  <div class="def"><span class="tag">הגנה</span><p>להסתיר או לזייף Banners (<code>ServerTokens Prod</code> ב-Apache, <code>server_tokens off</code> ב-nginx), דפי שגיאה גנריים, IDS שמזהה סריקות, וסגירת כל פורט שלא חייב להיות פתוח.</p></div>
+  </div>
+</section>
+
+<section id="se">
+  <h2><span class="n">8</span>הנדסה חברתית</h2>
+  <div class="col">
+  <blockquote style="margin:1rem 0;padding:.6rem 1rem;border-inline-start:3px solid var(--line);color:var(--muted)">"All warfare is based on deception... Hold out baits to entice the enemy. Pretend disorder, and crush him." · סון דזו, אמנות המלחמה</blockquote>
+  <p>הנדסה חברתית תוקפת את האדם במקום את המחשב. היא משתמשת במידע מה-OSINT כדי להיות אמינה.</p>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>Pretexting</h4><p>להתחזות למישהו שאתה לא, כדי להשיג משהו שכנראה לא אמור להיות לך, ולהשתמש בו בדרך שכנראה לא בסדר. דורש מחקר מקדים (חשבונות, מיילים, ת"ז).</p><p class="note">את מי? מזכירות, Helpdesk, עובדים חדשים. איך יוצרים אמון? שמות אמיתיים, ז'רגון פנימי, דחיפות וסמכות.</p></div>
+    <div class="box"><h4>Phishing</h4><p>מייל או הודעה שמתחזים לגורם אמין ומובילים לקישור או קובץ זדוני. <b>Spear phishing</b> = ממוקד באדם ספציפי עם מידע מה-OSINT. <b>Whaling</b> = מכוון להנהלה.</p></div>
+    <div class="box"><h4>Exit strategy</h4><p>לכל תוכנית צריכה להיות אסטרטגיית יציאה למקרה שהיא נכשלת, כדי לא לחשוף את התקיפה ולא "לשרוף" את המטרה.</p></div>
+  </div>
+  <div class="col">
+  <div class="why"><span class="tag">למה זה עובד</span><p>עקרונות ההשפעה של Cialdini: <b>סמכות</b> ("אני מה-IT"), <b>דחיפות</b> ("החשבון יינעל בעוד שעה"), <b>אמון וחיבה</b>, <b>הדדיות</b>. אנשים רוצים לעזור, וזו החולשה.</p></div>
+  <div class="real"><span class="tag">עולם אמיתי</span><p>פריצת Twitter 2020 (פרטקסטינג טלפוני לעובדים, השתלטות על חשבונות של אובמה ומאסק), MGM Resorts 2023 (שיחה ל-Helpdesk לאיפוס MFA, נזק של כ-100 מיליון דולר), ו-Business Email Compromise שגורם להעברות כספים מזויפות. כלים לבדיקות: GoPhish, SET (Social-Engineer Toolkit).</p></div>
+  </div>
+</section>
+
+<section id="tree">
+  <h2><span class="n">9</span>עץ תקיפה: להשיג סיסמה מהמזכירה</h2>
+  <figure>
+    <svg viewBox="0 0 720 470" width="720" role="img" aria-label="עץ תקיפה">
+      <g font-size="13">
+        <rect x="290" y="10" width="140" height="34" rx="17" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="360" y="32" text-anchor="middle" font-weight="700">Start</text>
+        <line x1="360" y1="44" x2="360" y2="64" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="215" y="66" width="290" height="54" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="360" y="88" text-anchor="middle">התקשר למזכירה כ"דני מה-Helpdesk"</text><text x="360" y="108" text-anchor="middle">בקש שתחליף סיסמה, ונתק</text>
+        <line x1="360" y1="120" x2="360" y2="140" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="215" y="142" width="290" height="40" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="360" y="167" text-anchor="middle">אחרי 10 דקות התקשר שוב: "החלפת?"</text>
+        <line x1="360" y1="182" x2="360" y2="202" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+        <polygon points="360,204 450,240 360,276 270,240" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="360" y="245" text-anchor="middle">מאמינה?</text>
+        <line x1="270" y1="240" x2="150" y2="240" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/><text x="215" y="232" text-anchor="middle" fill="var(--atk)">לא</text>
+        <rect x="10" y="215" width="138" height="52" rx="8" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="79" y="237" text-anchor="middle" font-size="12">Exit: "אגיע לשולחן</text><text x="79" y="255" text-anchor="middle" font-size="12">שלך עוד רגע" / לנתק</text>
+        <line x1="360" y1="276" x2="360" y2="300" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="375" y="292" fill="var(--def)">כן</text>
+        <polygon points="360,302 450,338 360,374 270,338" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="360" y="343" text-anchor="middle">החליפה?</text>
+        <line x1="450" y1="338" x2="520" y2="338" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/><text x="485" y="330" text-anchor="middle" fill="var(--muted)">לא</text>
+        <text x="620" y="320" text-anchor="middle" font-size="12">חזרה לשלב הקודם</text><text x="620" y="338" text-anchor="middle" font-size="12">(בקש שוב להחליף)</text>
+        <line x1="360" y1="374" x2="360" y2="394" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/><text x="375" y="388" fill="var(--def)">כן</text>
+        <rect x="190" y="396" width="340" height="52" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="360" y="418" text-anchor="middle">"תגידי לי את הסיסמה החדשה, אני צריך</text><text x="360" y="437" text-anchor="middle">לעדכן אותה במערכות"</text>
+        <line x1="530" y1="422" x2="590" y2="422" stroke="var(--def)" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="592" y="402" width="110" height="40" rx="20" fill="var(--def-soft)" stroke="var(--def)"/><text x="647" y="427" text-anchor="middle" font-weight="700" fill="var(--def)">Hacked</text>
+        <line x1="190" y1="422" x2="150" y2="300" stroke="var(--atk)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="140" y="370" text-anchor="middle" font-size="12" fill="var(--atk)">לא קיבלתי → Exit</text>
+      </g>
+    </svg>
+    <figcaption>הטריק: השיחה הראשונה רק "מכינה את הקרקע" ונותנת לגיטימציה. כשמגיעה השיחה השנייה, הבקשה נשמעת כהמשך טבעי.</figcaption>
+  </figure>
+  <div class="col"><div class="def"><span class="tag">הגנה</span><p>מדיניות ברורה: ה-IT <b>לעולם</b> לא מבקש סיסמה. אימות מתקשר בטלפון חוזר למספר ידוע, תרגילי פישינג והדרכות, ו-MFA עמיד לפישינג (FIDO2) כדי שסיסמה גנובה לבד לא תספיק.</p></div></div>
+</section>
+
+<section id="review">
+  <h2><span class="n">10</span>חזרה מהירה למבחן</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>שאלה</th><th>תשובה קצרה</th></tr></thead>
+    <tbody>
+      <tr><td>מה זה OSINT?</td><td>איסוף וניתוח מידע ממקורות גלויים לציבור כדי לייצר מודיעין.</td></tr>
+      <tr><td>Passive / Semi-passive / Active?</td><td>לא מתגלה / נראה כתעבורה רגילה / צפוי להתגלות.</td></tr>
+      <tr><td>מה מחזירות רשומות A, MX, NS, SOA?</td><td>IP של הדומיין, שרתי מייל, שרתי DNS מוסמכים, מידע מוסמך על האזור.</td></tr>
+      <tr><td>למה שאילתה ב-Shodan היא פסיבית?</td><td>היא פונה ל-DB של Shodan ולא ליעד.</td></tr>
+      <tr><td>open / closed / filtered?</td><td>SYN/ACK / RST / אין תשובה (Firewall).</td></tr>
+      <tr><td>מה זה Banner grabbing?</td><td>התחברות לשירות (למשל עם nc) וקריאת הגרסה מהתשובה, לרוב דרך בקשה תקולה.</td></tr>
+      <tr><td>Pretexting?</td><td>התחזות עם סיפור כיסוי מבוסס מחקר כדי לקבל מידע או גישה.</td></tr>
+      <tr><td>למה צריך Exit strategy?</td><td>כדי שכישלון לא יחשוף את התקיפה ולא ישרוף את המטרה.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src col">מקור: "02 HIT 2015-07 OSINT.pdf" (50 שקפים). סרטונים מהתיקייה: <a href="https://www.youtube.com/watch?v=brTY_ColZBM">לוחמה אלקטרונית: סטוקסנט</a>, <a href="https://www.youtube.com/watch?v=CS01Hmjv1pQ">Ralph Langner: Cracking Stuxnet</a>, <a href="https://www.youtube.com/watch?v=2G1ueMDgwxw">Port Forwarding Explained</a>. דוגמאות "עולם אמיתי" שלא בשקפים הן תוספות שלי.</p>
+</section>

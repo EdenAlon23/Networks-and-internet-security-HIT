@@ -1,0 +1,387 @@
+<header class="top">
+  <div class="eyebrow">פרק 05</div>
+  <h1>DoS ו-DDoS</h1>
+  <p class="lead">תקיפות שפוגעות ב-Availability: מניצול באגים בחבילה בודדת (Ping of Death, Teardrop, LAND), דרך SYN flood ו-SYN cookies, הצפות אפליקטיביות (HTTP flood, Slowloris), הגברה (NTP, DNS), חטיפת ניתוב ב-BGP, ועד תקיפות מתקדמות שמכוונות ללינקים ולמנגנוני TCP עצמם (Shrew, Coremelt, Crossfire).</p>
+  <nav class="toc" aria-label="תוכן עניינים">
+    <a href="#what">מה זה DoS</a><a href="#ddos">DDoS ובוטנטים</a><a href="#bugs">חבילות פגומות</a><a href="#reflect">Smurf ו-Echo loop</a><a href="#syn">SYN flood</a><a href="#cookies">SYN cookies</a><a href="#conn">Connection ו-HTTP flood</a><a href="#rst">RST</a><a href="#bw">רוחב פס ו-UDP</a><a href="#amp">הגברה</a><a href="#bgp">BGP</a><a href="#adv">תקיפות מתקדמות</a><a href="#review">חזרה</a>
+  </nav>
+</header>
+
+<section id="what">
+  <h2><span class="n">1</span>מה זה Denial of Service</h2>
+  <div class="col">
+  <p>ניסיון מכוון למנוע ממשתמשים לגיטימיים להשתמש בשירות: הצפת רשת, ניתוק חיבור בין שתי מכונות, חסימת אדם מסוים משירות, או שיבוש שירות למערכת מסוימת.</p>
+  <p>לא כל השבתה היא DoS. ו-DoS יכול להיות <b>רכיב בתקיפה גדולה יותר</b>: למשל בהרעלת DHCP (פרק 04) משביתים את השרת האמיתי כדי שהמזויף יענה ראשון. גם שימוש לא לגיטימי במשאבים (FTP אנונימי שמשמש לאחסון תוכנה פיראטית וממלא את הדיסק) גורם ל-DoS.</p>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>צריכת משאבים נדירים</h4><p>רוחב פס, זיכרון ודיסק, CPU, חיבורים, טבלת תהליכים. הסוג הנפוץ ביותר.</p></div>
+    <div class="box"><h4>השמדה או שינוי של קונפיגורציה</h4><p>שינוי Registry ב-Windows, שינוי טבלאות ניתוב בנתב.</p></div>
+    <div class="box"><h4>השמדה פיזית</h4><p>גישה לא מורשית לחדרי תקשורת, כבלים, חשמל וקירור. אבטחה פיזית.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>משאב</th><th>תקיפה לדוגמה</th></tr></thead>
+    <tbody>
+      <tr><td>Network connectivity</td><td>SYN flood (צורך מבני נתונים בקרנל, לא רוחב פס)</td></tr>
+      <tr><td>"המשאבים שלך נגדך"</td><td>UDP packet storm: echo ↔ chargen</td></tr>
+      <tr><td>Bandwidth</td><td>Link flood (ICMP, UDP), DDoS</td></tr>
+      <tr><td>משאבים אחרים</td><td>Fork bomb: תוכנית שרק משכפלת את עצמה וממלאת את טבלת התהליכים. הגנה: Quotas (<code>ulimit -u</code>)</td></tr>
+      <tr><td>Disruption</td><td>RST שמנתק חיבור TCP, הפלת פרגמנטים, ניצול באגים</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col"><div class="why"><span class="tag">המילה החשובה בפרק: אסימטריה</span><p>תקיפת DoS טובה עולה לתוקף מעט ולקורבן הרבה. SYN אחד = 40 בייט לתוקף, ותהליכון ומבנה נתונים בשרת. שאילתת DNS של 60 בייט = תשובה של 3000 בייט לקורבן. כל ההגנות בפרק מנסות להחזיר את הסימטריה.</p></div></div>
+</section>
+
+<section id="ddos">
+  <h2><span class="n">2</span>DDoS: Attacker, Masters, Daemons</h2>
+  <figure>
+    <svg viewBox="0 0 720 300" width="720" role="img" aria-label="DDoS hierarchy">
+      <g font-size="13">
+        <rect x="590" y="125" width="115" height="50" rx="8" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="2"/><text x="647" y="148" text-anchor="middle" font-weight="700">Real Attacker</text><text x="647" y="166" text-anchor="middle" font-size="11" fill="var(--muted)">מסתתר</text>
+        <rect x="440" y="65" width="100" height="40" rx="8" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="490" y="90" text-anchor="middle">Master / C&amp;C</text>
+        <rect x="440" y="195" width="100" height="40" rx="8" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="490" y="220" text-anchor="middle">Master / C&amp;C</text>
+        <g fill="var(--surface)" stroke="var(--line)"><rect x="270" y="20" width="90" height="32" rx="6"/><rect x="270" y="75" width="90" height="32" rx="6"/><rect x="270" y="130" width="90" height="32" rx="6"/><rect x="270" y="185" width="90" height="32" rx="6"/><rect x="270" y="240" width="90" height="32" rx="6"/></g>
+        <g font-size="12" text-anchor="middle"><text x="315" y="41">Daemon / Bot</text><text x="315" y="96">Daemon / Bot</text><text x="315" y="151">Daemon / Bot</text><text x="315" y="206">Daemon / Bot</text><text x="315" y="261">Daemon / Bot</text></g>
+        <rect x="30" y="120" width="120" height="60" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><text x="90" y="155" text-anchor="middle" font-weight="700">Victim</text>
+        <g stroke="var(--muted)" stroke-width="1.5"><line x1="588" y1="140" x2="544" y2="95" marker-end="url(#ar)"/><line x1="588" y1="160" x2="544" y2="205" marker-end="url(#ar)"/>
+        <line x1="438" y1="80" x2="364" y2="38" marker-end="url(#ar)"/><line x1="438" y1="85" x2="364" y2="91" marker-end="url(#ar)"/><line x1="438" y1="95" x2="364" y2="144" marker-end="url(#ar)"/><line x1="438" y1="210" x2="364" y2="203" marker-end="url(#ar)"/><line x1="438" y1="220" x2="364" y2="254" marker-end="url(#ar)"/></g>
+        <g stroke="var(--atk)" stroke-width="2.5"><line x1="268" y1="38" x2="154" y2="130" marker-end="url(#ar)"/><line x1="268" y1="91" x2="154" y2="140" marker-end="url(#ar)"/><line x1="268" y1="146" x2="154" y2="150" marker-end="url(#ar)"/><line x1="268" y1="201" x2="154" y2="160" marker-end="url(#ar)"/><line x1="268" y1="256" x2="154" y2="170" marker-end="url(#ar)"/></g>
+      </g>
+    </svg>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>כלי (שנות ה-2000)</th><th>Attacker ↔ Master</th><th>Master ↔ Daemon</th></tr></thead>
+    <tbody>
+      <tr><td>Trinoo</td><td>TCP</td><td>UDP, אימות בסיסמה</td></tr>
+      <tr><td>TFN / TFN2K</td><td>Shell</td><td>ICMP ECHO REPLY (נראה כמו Ping תמים)</td></tr>
+      <tr><td>Stacheldraht</td><td>TCP מוצפן</td><td>TCP + ICMP ECHO REPLY, עדכון אוטומטי ב-rcp</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <p>הפריסה: חורים מוכרים (<code>rpc.statd</code>, <code>rpc.cmsd</code>, <code>amd</code>...) עם כלי "Auto-hack". הלקח מההרצאה: <b>היגיינת מחשבים טובה</b>, כי כל מחשב לא מעודכן הוא חייל פוטנציאלי.</p>
+  <div class="real"><span class="tag">עולם אמיתי</span><p><b>Mirai (2016)</b>: בוטנט של מצלמות ונתבים עם סיסמאות ברירת מחדל (Telnet). תקף את Dyn (DNS) והפיל את Twitter, Netflix ו-GitHub. היום בוטנטים משתמשים ב-HTTPS, ב-P2P, ואפילו ברשתות חברתיות כערוץ C&amp;C. שירותי "Booter/Stresser" משכירים DDoS בכמה דולרים.</p></div>
+  </div>
+</section>
+
+<section id="bugs">
+  <h2><span class="n">3</span>חבילה אחת שמפילה מערכת: Ping of Death, Teardrop, Bonk, LAND</h2>
+  <div class="col"><p>תזכורת: IP הוא Connectionless ו-Best effort; חבילה גדולה מפוצלת לפרגמנטים עם שדות <code>Identification</code>, <code>Flags</code> ו-<code>Fragment Offset</code>, והיעד מרכיב אותה. כל התקיפות כאן מנצלות קוד הרכבה שלא בדק מקרי קצה.</p></div>
+  <figure>
+    <svg viewBox="0 0 700 250" width="700" role="img" aria-label="Fragments">
+      <g font-size="13">
+        <text x="680" y="25" text-anchor="start" font-weight="700">תקין</text>
+        <rect x="60" y="35" width="200" height="30" fill="var(--def-soft)" stroke="var(--def)"/><text x="160" y="55" text-anchor="middle" direction="ltr">offset 0 · 0–1479</text>
+        <rect x="260" y="35" width="200" height="30" fill="var(--def-soft)" stroke="var(--def)"/><text x="360" y="55" text-anchor="middle" direction="ltr">offset 1480 · 1480–2959</text>
+        <rect x="460" y="35" width="120" height="30" fill="var(--def-soft)" stroke="var(--def)"/><text x="520" y="55" text-anchor="middle" direction="ltr">2960–3499</text>
+        <text x="680" y="105" text-anchor="start" font-weight="700" fill="var(--atk)">Teardrop</text>
+        <rect x="60" y="115" width="200" height="30" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="160" y="135" text-anchor="middle" direction="ltr">0–1479</text>
+        <rect x="200" y="150" width="120" height="30" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="260" y="170" text-anchor="middle" direction="ltr">1400–1450</text>
+        <text x="440" y="155" text-anchor="middle" font-size="12" fill="var(--atk)">חפיפה: השני "בתוך" הראשון → אורך שלילי → קריסה</text>
+        <text x="680" y="215" text-anchor="start" font-weight="700" fill="var(--atk)">Ping of Death</text>
+        <rect x="60" y="200" width="460" height="30" fill="var(--atk-soft)" stroke="var(--atk)"/><text x="290" y="220" text-anchor="middle" direction="ltr">fragments sum &gt; 65,535 bytes</text>
+        <line x1="440" y1="195" x2="440" y2="236" stroke="var(--atk)" stroke-width="2" stroke-dasharray="4 3"/><text x="440" y="248" text-anchor="middle" font-size="11" fill="var(--atk)">גבול 65,535</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="grid">
+    <div class="box"><h4>Ping of Death</h4><p>מקסימום IP = 65,535 בייט. מקסימום Data ב-ICMP Echo = 65,535 − 20 (IP) − 8 (ICMP) = <b>65,507</b>. אבל פרגמנטים יכולים "להסתכם" ליותר. זה לא חוקי, ולכן מתכנתים לא טיפלו בזה: Buffer overflow, קפיאה, קריסה, Reboot.</p><p class="note">פתרון: עדכון OS, סינון ICMP.</p></div>
+    <div class="box"><h4>Teardrop</h4><p>Offset של פרגמנטים <b>חופפים</b>. מימוש TCP/IP גרוע קורס בניסיון להרכיב.</p></div>
+    <div class="box"><h4>Bonk</h4><p>Offset <b>גדול מאוד</b>. אותו סוג קריסה.</p><p class="note">פתרון לשניהם: מימוש TCP/IP עדכני.</p></div>
+    <div class="box"><h4>LAND</h4><p>SYN שבו <b>מקור = יעד</b> (גם IP וגם פורט). המערכת שולחת SYN/ACK לעצמה ונתקעת בלולאה עד Timeout. Windows XP SP2 נעל CPU.</p><p class="note">פתרון: Ingress filtering (חבילה מבחוץ עם כתובת פנימית = מזויפת).</p></div>
+  </div>
+  <div class="col"><div class="real"><span class="tag">עולם אמיתי</span><p>התקיפות האלה מתות כבר עשור, אבל הדפוס חי: CVE-2020-16898 ("Bad Neighbor", חבילת ICMPv6 שמפילה Windows) ו-CVE-2024-38063 (IPv6 ב-Windows) הם בדיוק "Ping of Death" מודרני.</p></div></div>
+</section>
+
+<section id="reflect">
+  <h2><span class="n">4</span>Smurf, Reverse Path Filtering ו-Echo loop</h2>
+  <div class="col">
+  <p><b>Smurf</b> (ראינו בפרק 03): Echo Request ל-Broadcast עם IP מקור של הקורבן, וכל הרשת עונה לקורבן. פתרונות: לדחות חבילות חיצוניות לכתובות Broadcast, ו-<b>Reverse Path Filtering</b>.</p>
+  <div class="why"><span class="tag">Reverse Path Filtering (Linux)</span><p>חבילה עם מקור X הגיעה מממשק I. הקרנל שואל: "אם הייתי שולח תשובה ל-X, מאיזה ממשק היא הייתה יוצאת?" אם לא מ-I, החבילה כנראה מזויפת ונזרקת. ב-Linux: <code>net.ipv4.conf.all.rp_filter=1</code>.</p></div>
+  </div>
+  <figure>
+    <svg viewBox="0 0 700 140" width="700" role="img" aria-label="Echo loop">
+      <g font-size="13">
+        <rect x="530" y="40" width="150" height="56" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="605" y="64" text-anchor="middle" font-weight="700">Victim 1</text><text x="605" y="84" text-anchor="middle" font-size="12">echo · UDP 7</text>
+        <rect x="20" y="40" width="150" height="56" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="95" y="64" text-anchor="middle" font-weight="700">Victim 2</text><text x="95" y="84" text-anchor="middle" font-size="12">chargen · UDP 19</text>
+        <path d="M528,55 L174,55" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/><path d="M174,82 L528,82" stroke="var(--atk)" stroke-width="2" marker-end="url(#ar)"/>
+        <text x="350" y="48" text-anchor="middle" fill="var(--atk)">echo מחזיר כל מה שקיבל</text><text x="350" y="100" text-anchor="middle" fill="var(--atk)">chargen עונה בתווים אקראיים</text>
+        <text x="350" y="130" text-anchor="middle" fill="var(--muted)">חבילה מזויפת אחת (from V2:19 to V1:7) → לולאה אינסופית, בלי משאבי תוקף</text>
+      </g>
+    </svg>
+  </figure>
+  <p class="col">זה "שימוש במשאבים שלך נגדך" (UDP packet storm). כל שירות שעונה לכל בקשה מתאים. תיקון קל: לבטל או לחסום את השירותים האלה.</p>
+</section>
+
+<section id="syn">
+  <h2><span class="n">5</span>SYN Flood</h2>
+  <figure>
+    <svg viewBox="0 0 700 290" width="700" role="img" aria-label="SYN flood">
+      <g font-size="13">
+        <text x="620" y="22" text-anchor="middle" font-weight="700" fill="var(--atk)">Attacker</text><text x="300" y="22" text-anchor="middle" font-weight="700">Server</text>
+        <line x1="620" y1="30" x2="620" y2="280" stroke="var(--line)" stroke-width="2"/><line x1="300" y1="30" x2="300" y2="280" stroke="var(--line)" stroke-width="2"/>
+        <g stroke="var(--atk)" stroke-width="2"><line x1="615" y1="55" x2="306" y2="55" marker-end="url(#ar)"/><line x1="615" y1="85" x2="306" y2="85" marker-end="url(#ar)"/><line x1="615" y1="115" x2="306" y2="115" marker-end="url(#ar)"/><line x1="615" y1="145" x2="306" y2="145" marker-end="url(#ar)"/><line x1="615" y1="175" x2="306" y2="175" marker-end="url(#ar)"/></g>
+        <g font-size="11" text-anchor="middle" fill="var(--atk)"><text x="460" y="49">SYN, src = 1.1.1.1 (מזויף)</text><text x="460" y="79">SYN, src = 2.2.2.2</text><text x="460" y="109">SYN, src = 3.3.3.3</text><text x="460" y="139">...</text><text x="460" y="169">SYN, src = N.N.N.N</text></g>
+        <g stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"><line x1="294" y1="60" x2="200" y2="60" marker-end="url(#ar)"/><line x1="294" y1="90" x2="200" y2="90" marker-end="url(#ar)"/><line x1="294" y1="120" x2="200" y2="120" marker-end="url(#ar)"/></g>
+        <text x="150" y="95" text-anchor="middle" font-size="11" fill="var(--muted)">SYN/ACK לכתובות</text><text x="150" y="110" text-anchor="middle" font-size="11" fill="var(--muted)">שלא קיימות / לא עונות</text>
+        <rect x="20" y="190" width="270" height="80" rx="8" fill="var(--atk-soft)" stroke="var(--atk)"/>
+        <text x="155" y="210" text-anchor="middle" font-weight="700">Backlog (חצאי חיבורים)</text>
+        <g fill="var(--atk)"><rect x="35" y="222" width="28" height="20"/><rect x="67" y="222" width="28" height="20"/><rect x="99" y="222" width="28" height="20"/><rect x="131" y="222" width="28" height="20"/><rect x="163" y="222" width="28" height="20"/><rect x="195" y="222" width="28" height="20"/><rect x="227" y="222" width="28" height="20"/></g>
+        <text x="155" y="262" text-anchor="middle" font-size="12">מלא → SYN של משתמש אמיתי נזרק</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">למה זה עובד</span><p>על כל SYN השרת מקצה <b>מצב</b> (Thread, TCB) ומחכה ל-ACK עד Timeout. יש <b>גבול קבוע</b> לחצאי חיבורים. לשלוח SYN לא עולה כלום ליוזם, אבל המגיב צריך להקצות משאבים: <b>אסימטריה</b>. לכן אפשר להפיל שרת על רשת מהירה מחיבור Dial-up.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>OS (1996)</th><th>Backlog</th></tr></thead>
+    <tbody><tr><td>Linux 1.2.x</td><td class="num">10</td></tr><tr><td>FreeBSD 2.1.5</td><td class="num">128</td></tr><tr><td>WinNT 4.0</td><td class="num">6</td></tr></tbody>
+  </table></div>
+  <div class="col">
+  <p>Timeout של 3 דקות → מספיק <b>128 SYNs כל 3 דקות</b> כדי להשבית FreeBSD (Phrack 48, 1996). זה Low-rate SYN flood.</p>
+  <div class="real"><span class="tag">אירועים מההרצאה</span><ul><li><b>MS Blaster (2003):</b> כל מחשב נגוע שלח 50 SYN לשנייה לפורט 80 של windowsupdate.com.</li><li><b>BetCris.com (2003):</b> 20,000 בוטים = 2Gb/s של SYN. ה-IP אקראי, ולכן SYN של התקיפה נראה בדיוק כמו SYN אמיתי.</li><li><b>אסטוניה (2007):</b> 115 ICMP floods ו-4 SYN floods, 12 תקיפות של 70–95Mbps למשך 10+ שעות. כל התעבורה הגיעה מחוץ לאסטוניה, אז ספקי האינטרנט שם <b>חסמו כל תעבורה זרה</b> עד שהתקיפה נגמרה, והנזק בתוך המדינה היה קטן.</li></ul></div>
+  <h3>זיהוי</h3>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>זוגות SYN–FIN</h4><p>בדרך כלל לכל SYN יש FIN. אבל RST שובר את זה: Passive RST (פורט סגור) ו-Active RST (הלקוח מבטל) נורמליים. מניחים ~75% Active. <b>חולשה:</b> התוקף שולח FIN/RST נוספים עם IP/פורט אחרים "לאזן" את הספירה, במחיר חצי מרוחב הפס שלו.</p></div>
+    <div class="box"><h4>זוגות SYN – SYN/ACK</h4><p>קשה לתוקף לעקוף. אבל צריך להאזין גם לנכנס וגם ליוצא, ומתגלה רק כשכבר מוצפים.</p></div>
+  </div>
+  <div class="col"><h3>מניעה</h3></div>
+  <div class="grid">
+    <div class="box"><h4>Ingress filtering (RFC 2827 / BCP 38)</h4><p>נתב בקצה הרשת 204.69.207.0/24 זורק כל חבילה יוצאת עם מקור אחר. אפשרי בקצוות, קשה בליבת הרשת. מונע זיוף מלכתחילה, אבל רק אם <b>כולם</b> עושים את זה.</p></div>
+    <div class="box"><h4>uRPF (Unicast Reverse Path Forwarding)</h4><p>מקבלים חבילה מממשק רק אם בטבלת הניתוב המקור "יושב" מאחורי אותו ממשק (Cisco: <code>ip verify unicast reverse-path</code>). דורש <b>ניתוב סימטרי</b>; בניתוב אסימטרי זורק חבילות לגיטימיות.</p></div>
+    <div class="box"><h4>Random deletion</h4><p>כשהתור מלא, מוחקים רשומה אקראית. חיבורים אמיתיים מספיקים להשלים, וכתובות מזויפות יימחקו בסוף. קל למימוש.</p></div>
+    <div class="box"><h4>Proxy (Prolexic / Verisign)</h4><p>Proxy בענן מקבל את כל ה-SYNs, מסיים Handshake בעצמו, ורק חיבורים שהושלמו (ACK) מועברים לאתר.</p></div>
+  </div>
+</section>
+
+<section id="cookies">
+  <h2><span class="n">6</span>SYN Cookies (Bernstein &amp; Schenk)</h2>
+  <div class="col"><p>הרעיון: השרת <b>לא שומר מצב</b> עד שהלקוח הוכיח שהוא אמיתי ע"י שליחת הודעה שנייה. את כל המצב מקודדים בתוך ה-Sequence number של ה-SYN/ACK, וכשחוזר ACK עם <code>cookie+1</code>, מחשבים שוב ומשווים.</p></div>
+  <figure>
+    <svg viewBox="0 0 700 120" width="700" role="img" aria-label="SYN cookie bits">
+      <g font-size="13" direction="ltr">
+        <text x="350" y="18" text-anchor="middle" fill="var(--muted)">Initial Sequence Number · 32 bits</text>
+        <rect x="40" y="30" width="100" height="46" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="90" y="52" text-anchor="middle" font-weight="700">t mod 32</text><text x="90" y="69" text-anchor="middle" font-size="11">5 bits</text>
+        <rect x="140" y="30" width="70" height="46" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="175" y="52" text-anchor="middle" font-weight="700">MSS</text><text x="175" y="69" text-anchor="middle" font-size="11">3 bits</text>
+        <rect x="210" y="30" width="450" height="46" fill="var(--def-soft)" stroke="var(--def)"/><text x="435" y="52" text-anchor="middle" font-weight="700">s = HMAC(server secret, SIP, SPort, DIP, DPort, t)</text><text x="435" y="69" text-anchor="middle" font-size="11">24 bits</text>
+        <text x="40" y="96" font-size="11" fill="var(--muted)">bit 31</text><text x="660" y="96" text-anchor="end" font-size="11" fill="var(--muted)">bit 0</text>
+      </g>
+      <text x="350" y="114" text-anchor="middle" font-size="12" fill="var(--muted)">t = time() &gt;&gt; 6 (רזולוציה של 64 שניות)</text>
+    </svg>
+  </figure>
+  <figure>
+    <svg viewBox="0 0 700 220" width="700" role="img" aria-label="SYN cookie flow">
+      <g font-size="13">
+        <text x="600" y="22" text-anchor="middle" font-weight="700">Client</text><text x="100" y="22" text-anchor="middle" font-weight="700">Server</text>
+        <line x1="600" y1="30" x2="600" y2="210" stroke="var(--line)" stroke-width="2"/><line x1="100" y1="30" x2="100" y2="210" stroke="var(--line)" stroke-width="2"/>
+        <line x1="595" y1="55" x2="106" y2="55" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="350" y="48" text-anchor="middle">SYN (seq = x)</text>
+        <line x1="106" y1="105" x2="595" y2="105" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar)"/><text x="350" y="98" text-anchor="middle" fill="var(--accent)">SYN/ACK (seq = <tspan font-weight="700">cookie</tspan>)</text>
+        <text x="100" y="128" text-anchor="middle" font-size="11" fill="var(--def)">לא שומר כלום!</text>
+        <line x1="595" y1="160" x2="106" y2="160" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="350" y="153" text-anchor="middle">ACK (ack = cookie + 1)</text>
+        <text x="100" y="185" text-anchor="middle" font-size="11" fill="var(--def)">מחשב מחדש, משווה,</text><text x="100" y="200" text-anchor="middle" font-size="11" fill="var(--def)">ורק אז פותח חיבור</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+  <p><b>הבדיקה:</b> מחסירים 1 מה-ACK, בודקים ש-<code>t</code> לא פג, מחשבים שוב את <code>s</code>, ומפענחים את ה-MSS מ-3 הביטים כדי לבנות את רשומת החיבור.</p>
+  <div class="why"><span class="tag">שאלות מהשקף: למה?</span><ul><li><b>למה ה-Cookie חייב להיות בלתי ניתן לזיוף (Tamper-proof)?</b> אחרת תוקף יחשב Cookie תקין בלי לקבל SYN/ACK, ישלח ACK מזויף ויפתח חיבורים מכתובות מזויפות. לכן יש סוד שרק השרת מכיר.</li><li><b>למה הלקוח לא אמור להיות מסוגל להפוך אותו?</b> כדי שלא יחלץ את הסוד של השרת ויוכל לייצר Cookies בעצמו.</li><li><b>למה זה מונע זיוף?</b> מקור מזויף לא מקבל את ה-SYN/ACK, ולכן לא יודע את ה-Cookie ולא יכול להחזיר ACK תקין.</li></ul></div>
+  <div class="atk"><span class="tag">מחיר</span><p>רק 8 ערכי MSS אפשריים, ואין מקום לאופציות TCP (Window scaling, SACK) ולכן ביצועים נפגעים. לכן Linux מפעיל Cookies רק כשהתור מלא (<code>net.ipv4.tcp_syncookies=1</code>). היום אפשר לקודד אופציות ב-Timestamp.</p></div>
+  <p><b>התבנית הכללית (Anti-spoofing cookies):</b> במקום להקים מצב אחרי הודעה 1, שולחים Hash של נתוני החיבור; הלקוח מחזיר אותו ומוכיח שהוא באמת בכתובת. משמש גם ב-IKE (IPsec), DTLS ו-QUIC (Retry token).</p>
+  </div>
+</section>
+
+<section id="conn">
+  <h2><span class="n">7</span>מעבר לשכבה 4: Connection flood, HTTP flood, Low and Slow</h2>
+  <div class="grid">
+    <div class="box"><h4>TCP Connection flood</h4><p>בוטים משלימים Handshake מלא ושולחים HEAD קצר או משאירים חיבור ריק, שוב ושוב. עוקף Proxy נגד SYN, אבל התוקף <b>לא יכול לזייף IP</b>, ולכן חושף את הבוטים, וה-Proxy יכול לחסום או להגביל אותם.</p></div>
+    <div class="box"><h4>Empty connection flood</h4><p>חיבור מלא בלי לשלוח Data. טבלת החיבורים סופית (~1500, ו-Apache מגיע עם 150 Workers כברירת מחדל), ומתמלאת מהר.</p></div>
+    <div class="box"><h4>HTTP flood</h4><p>חיבור TCP לגיטימי + בקשות אמיתיות, ולכן <b>קשה מאוד לזהות</b>. GET לדפים כבדים (רוחב פס), POST עם גוף גדול לטפסים (יעיל יותר, כי השרת מעבד). תמיד מבוזר ולא מזויף.</p></div>
+    <div class="box"><h4>Low and Slow (Slowloris / R.U.D.Y.)</h4><p>בקשות <b>חלקיות</b>: שולחים Header אחד כל כמה שניות ולעולם לא מסיימים. השרת מחזיק Thread לכל חיבור, וכשהטבלה מלאה → DoS. נראה כמו משתמש איטי, תוקף אחד מספיק.</p></div>
+  </div>
+  <figure>
+    <svg viewBox="0 0 700 180" width="700" role="img" aria-label="Slowloris">
+      <g font-size="13">
+        <text x="620" y="22" text-anchor="middle" font-weight="700" fill="var(--atk)">Attacker</text><text x="100" y="22" text-anchor="middle" font-weight="700">Web server</text>
+        <line x1="620" y1="30" x2="620" y2="170" stroke="var(--line)" stroke-width="2"/><line x1="100" y1="30" x2="100" y2="170" stroke="var(--line)" stroke-width="2"/>
+        <g direction="ltr" font-size="12">
+        <line x1="615" y1="50" x2="106" y2="50" stroke="var(--atk)" stroke-width="1.5" marker-end="url(#ar)"/><text x="360" y="44" text-anchor="middle">GET / HTTP/1.1\r\nHost: x\r\n</text>
+        <line x1="615" y1="85" x2="106" y2="85" stroke="var(--atk)" stroke-width="1.5" marker-end="url(#ar)"/><text x="360" y="79" text-anchor="middle">X-a: 1\r\n          (+10s)</text>
+        <line x1="615" y1="120" x2="106" y2="120" stroke="var(--atk)" stroke-width="1.5" marker-end="url(#ar)"/><text x="360" y="114" text-anchor="middle">X-b: 2\r\n          (+10s)  …never \r\n\r\n</text>
+        </g>
+        <text x="360" y="160" text-anchor="middle" fill="var(--muted)">× מאות חיבורים במקביל = כל ה-Workers תפוסים</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col"><div class="def"><span class="tag">הגנה</span><p>Timeouts קצרים לקבלת Headers (<code>mod_reqtimeout</code>), שרתים אסינכרוניים (nginx) שלא מקצים Thread לחיבור, הגבלת חיבורים ל-IP, WAF עם Rate limiting, CAPTCHA/JS challenge (Cloudflare "Under attack mode") נגד HTTP flood, ו-CDN שסופג את העומס.</p></div></div>
+</section>
+
+<section id="rst">
+  <h2><span class="n">8</span>RST attack ו-TCP connection spoofing</h2>
+  <div class="col">
+  <p>חיבור TCP מוגדר ע"י פורטים ו-Sequence number. פורטים סטנדרטיים, ו-Seq צפוי. ניחוש 32 ביט לא מעשי, <b>אבל</b> מערכות מקבלות כל Seq בתוך <b>החלון</b> (בגלל איבוד חבילות). לכן שולחים RST-ים במרווחים של גודל החלון.</p>
+  <p><b>Watson (2004)</b>: התקיפה על חיבורי <b>BGP</b>. חלון גדול + חיבור ארוך = קל. פורט הלקוח של Windows היה סדרתי (ורוב הגרסאות רק עד 5000), אז קל לנחש.</p>
+  <div class="why"><span class="tag">למה BGP</span><p>מושב BGP הוא חיבור TCP ארוך מאוד בין נתבים. RST מנתק אותו, הנתב מוחק את כל המסלולים שלמד מהשכן, וזה מתפשט לכל האינטרנט (Route flapping).</p></div>
+  <div class="def"><span class="tag">הגנה</span><p>TCP MD5 signature (RFC 2385) ו-TCP-AO למושבי BGP, GTSM (TTL=255 כדי שרק שכן ישיר יוכל לשלוח), ו-RFC 5961 (RST בתוך החלון אבל לא בדיוק במקום מקבל Challenge ACK).</p></div>
+  </div>
+</section>
+
+<section id="bw">
+  <h2><span class="n">9</span>Bandwidth starvation ו-UDP flood</h2>
+  <div class="col">
+  <p>להציף נקודות צוואר בקבוק ברשת ביותר תעבורה ממה שהן יכולות להעביר, כך שתעבורה לגיטימית לא מגיעה בכלל לתשתית של היעד. פשוט "לשאוב" יותר ממה שיש.</p>
+  <p><b>UDP</b> הוא Connectionless: אין Handshake, אין ACK, אין Flow control. לכן קל לזייף ולהציף.</p>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>UDP flood</h4><p>הרבה חבילות UDP לפורטים <b>אקראיים</b>. לכל אחת השרת: בודק אם יש אפליקציה בפורט, רואה שאין, ועונה ICMP Destination Unreachable. הרבה CPU, באפרים מלאים.</p></div>
+    <div class="box"><h4>שני פרופילים</h4><p>חבילות <b>קטנות</b> לפטיש על האפליקציה (PPS), או חבילות <b>גדולות</b> לרוקן רוחב פס (BPS).</p></div>
+    <div class="box"><h4>דוגמה</h4><p>לינק של 30Mbps לשרת, התוקף שולח 30Mbps של UDP. הלינק מלא; אם הניתוב סימטרי גם התשובות חוזרות באותו נתיב.</p></div>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 220" width="720" role="img" aria-label="Collateral damage">
+      <g font-size="12">
+        <g fill="var(--surface)" stroke="var(--ink)">
+          <circle cx="80" cy="50" r="24"/><circle cx="640" cy="50" r="24"/><circle cx="80" cy="170" r="24"/><circle cx="360" cy="50" r="24"/><circle cx="360" cy="170" r="24"/><circle cx="640" cy="170" r="24"/>
+        </g>
+        <g text-anchor="middle"><text x="80" y="54">Seattle</text><text x="640" y="54">New York</text><text x="80" y="174">Sunnyvale</text><text x="360" y="54">Kansas</text><text x="360" y="174">Houston</text><text x="640" y="174">Atlanta</text></g>
+        <line x1="104" y1="50" x2="336" y2="50" stroke="var(--line)" stroke-width="3"/>
+        <line x1="104" y1="170" x2="336" y2="170" stroke="var(--line)" stroke-width="3"/>
+        <line x1="360" y1="74" x2="360" y2="146" stroke="var(--line)" stroke-width="3"/>
+        <line x1="384" y1="170" x2="616" y2="170" stroke="var(--atk)" stroke-width="6"/>
+        <line x1="640" y1="146" x2="640" y2="74" stroke="var(--atk)" stroke-width="6"/>
+        <text x="500" y="160" text-anchor="middle" fill="var(--atk)" font-weight="700">Attack 10 Gb/s</text>
+        <path d="M104,60 C200,90 300,120 336,160" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="500" y="110" text-anchor="middle" fill="var(--accent)">Seattle→NY ו-Sunnyvale→NY (3+3 Gb/s)</text>
+        <text x="500" y="126" text-anchor="middle" fill="var(--accent)">עוברים דרך אותו לינק → Collateral damage</text>
+        <text x="360" y="210" text-anchor="middle" fill="var(--muted)">לינקים של 10G. התקיפה בין Houston ל-Atlanta פוגעת גם במי שבכלל לא היה המטרה</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col"><p>למה קשה להתמודד: כתובות מזויפות, אפשר להציף <b>בלי תעבורה "לא רצויה"</b> (כל זרם לגיטימי לחלוטין), ואפשר לתזמן הרבה זרמים חלשים שעוברים בלינק המטרה באותו זמן.</p></div>
+</section>
+
+<section id="amp">
+  <h2><span class="n">10</span>תקיפות הגברה (Amplification / Reflection)</h2>
+  <figure>
+    <svg viewBox="0 0 720 200" width="720" role="img" aria-label="Amplification">
+      <g font-size="13">
+        <rect x="590" y="70" width="115" height="56" rx="8" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="2"/><text x="647" y="94" text-anchor="middle" font-weight="700">Attacker</text><text x="647" y="113" text-anchor="middle" font-size="11">src = Victim</text>
+        <rect x="300" y="60" width="140" height="76" rx="8" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="370" y="88" text-anchor="middle" font-weight="700">Reflector</text><text x="370" y="108" text-anchor="middle" font-size="12">NTP / DNS / Memcached</text><text x="370" y="125" text-anchor="middle" font-size="11" fill="var(--muted)">שרת תמים ופתוח</text>
+        <rect x="20" y="70" width="120" height="56" rx="8" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><text x="80" y="103" text-anchor="middle" font-weight="700">Victim</text>
+        <line x1="588" y1="98" x2="444" y2="98" stroke="var(--atk)" stroke-width="1.5" marker-end="url(#ar)"/><text x="516" y="88" text-anchor="middle" font-size="12">בקשה קטנה</text>
+        <line x1="298" y1="98" x2="144" y2="98" stroke="var(--atk)" stroke-width="9" marker-end="url(#ar)"/><text x="221" y="80" text-anchor="middle" font-size="12" fill="var(--atk)">תשובה ענקית</text>
+        <text x="360" y="180" text-anchor="middle" fill="var(--muted)">BAF = גודל תשובה / גודל בקשה · PAF = מספר חבילות תשובה / חבילות בקשה</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>פרוטוקול</th><th>הבקשה</th><th>בקשה → תשובה</th><th>הגברה</th><th>אירוע</th></tr></thead>
+    <tbody>
+      <tr><td><b>NTP</b> (monlist)</td><td>"תן לי את 600 המכונות האחרונות שדיברת איתן"</td><td class="num">234 B → 49,000 B</td><td class="num">×206</td><td>12/2013–2/2014: תקיפות של 400 Gbps עם 4,529 שרתי NTP. 7 מיליון שרתים לא מאובטחים</td></tr>
+      <tr><td><b>DNS</b> (EDNS, ANY)</td><td>שאילתה לרשומה גדולה</td><td class="num">60 B → 3,000 B</td><td class="num">×50</td><td>Spamhaus, מרץ 2013: 300 Gbps. Open resolvers: 0.58M ב-2006 → 21.7M ב-2013</td></tr>
+      <tr><td>Memcached <span class="note">(תוספת)</span></td><td>get למפתח גדול</td><td class="num">15 B → 750 KB</td><td class="num">עד ×51,000</td><td>GitHub, פברואר 2018: 1.35 Tbps</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <div class="why"><span class="tag">שלושה תנאים להגברה</span><ol><li>פרוטוקול <b>UDP</b> (אין Handshake, אז אפשר לזייף מקור).</li><li>תשובה <b>גדולה בהרבה</b> מהבקשה.</li><li>הרבה שרתים <b>פתוחים</b> לכל העולם.</li></ol><p>בנוסף, הקורבן רואה תעבורה משרתים לגיטימיים, אז קשה לחסום בלי נזק.</p></div>
+  <div class="def"><span class="tag">הגנה</span><p>אצל המחזיר: לסגור Open resolvers, לבטל <code>monlist</code>, Response Rate Limiting ב-DNS, לא לחשוף Memcached לאינטרנט. ברשת: BCP 38 (בלי זיוף אין הגברה). אצל הקורבן: Scrubbing center בענן (Cloudflare, Akamai) ו-Anycast שמפזר את התקיפה על הרבה אתרים.</p></div>
+  </div>
+</section>
+
+<section id="bgp">
+  <h2><span class="n">11</span>DoS דרך ניתוב: BGP</h2>
+  <div class="col">
+  <p>האינטרנט הוא "רשת של רשתות". <b>AS (Autonomous System)</b> הוא אוסף רשתות IP בשליטת מנהל אחד (למשל ספק). <b>BGP</b> הוא הפרוטוקול שבו ASים מפרסמים זה לזה לאילו Prefixes הם יודעים להגיע.</p>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>Distance-vector (RIP)</h4><p>כל צומת שומר וקטור מרחקים ושולח אותו לשכנים (Bellman-Ford). <b>Split-horizon</b>: לא לפרסם מסלול בממשק שממנו למדת אותו.</p></div>
+    <div class="box"><h4>Path-vector (BGP)</h4><p>כמו Distance-vector, אבל כל עדכון כולל את <b>רשימת ה-ASים</b> במסלול. כל נתב בוחר מסלול "הכי טוב" (לא בהכרח הקצר: Hot vs Cold potato) ותמיד מעדיף את ה-<b>Prefix הספציפי ביותר</b>.</p></div>
+  </div>
+  <div class="col">
+  <p><b>Good news travels fast, bad news travels slowly:</b> כשלינק נופל, G1 ו-G2 ממשיכים לפרסם זה לזה מסלולים ישנים ו"סופרים לאינסוף" (Count to infinity). Split-horizon מונע רק לולאה של שני צמתים.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 200" width="720" role="img" aria-label="YouTube hijack">
+      <g font-size="13">
+        <rect x="470" y="30" width="230" height="56" rx="8" fill="var(--def-soft)" stroke="var(--def)"/><text x="585" y="54" text-anchor="middle" font-weight="700">AS36561 (YouTube)</text><text x="585" y="74" text-anchor="middle" direction="ltr">208.65.152.0/22</text>
+        <rect x="470" y="115" width="230" height="56" rx="8" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="2"/><text x="585" y="139" text-anchor="middle" font-weight="700">AS17557 (Pakistan Telecom)</text><text x="585" y="159" text-anchor="middle" direction="ltr" font-weight="700">208.65.153.0/24</text>
+        <rect x="20" y="75" width="200" height="56" rx="8" fill="var(--surface)" stroke="var(--ink)"/><text x="120" y="98" text-anchor="middle" font-weight="700">כל האינטרנט</text><text x="120" y="117" text-anchor="middle" font-size="12" direction="ltr">→ 208.65.153.238 ?</text>
+        <line x1="224" y1="95" x2="466" y2="62" stroke="var(--line)" stroke-width="2" stroke-dasharray="5 4"/>
+        <line x1="224" y1="112" x2="466" y2="140" stroke="var(--atk)" stroke-width="3" marker-end="url(#ar)"/>
+        <text x="345" y="160" text-anchor="middle" fill="var(--atk)">/24 ספציפי יותר מ-/22 → מנצח</text>
+        <text x="345" y="190" text-anchor="middle" fill="var(--muted)">24.2.2008 · השבתה עולמית של שעתיים</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="col">
+  <div class="why"><span class="tag">החולשה</span><p>הודעות BGP <b>בלי אימות ובלי הגנת שלמות</b>. תוקף (או טעות) יכול: לשנות Prefixes ולעשות Blackhole, לשנות AS path כדי למשוך תעבורה אליו או להסיט ממנו, או להעביר מסלולים בלי רשות (לקוח Multi-homed שפתאום "מספק Transit" בין שני ספקים גדולים). יש גם תמריץ כלכלי: ספק רוצה "לזרוק" תעבורה על אחרים.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>תאריך</th><th>אירוע</th></tr></thead>
+    <tbody>
+      <tr><td>25.4.1997</td><td><b>AS7007</b> ("היום שבו האינטרנט מת"): פירק את טבלת הניתוב ופרסם מחדש את כל ה-Prefixes כאילו הוא המקור. נתבים קרסו.</td></tr>
+      <tr><td>05/2003</td><td>ספאמרים חטפו בלוק כתובות לא בשימוש של Northrop Grumman; כל החברה נכנסה לרשימות שחורות, חודשיים לשחזר.</td></tr>
+      <tr><td>05/2004</td><td>ספק מלזי חטף Prefix של Data center של Yahoo.</td></tr>
+      <tr><td>12/2004</td><td>ספק טורקי פרסם מסלולים לכל האינטרנט (Amazon, CNN, Yahoo).</td></tr>
+      <tr><td>24.2.2008</td><td>Pakistan Telecom ו-YouTube (בתרשים). ניסיון חסימה מקומית שדלף החוצה.</td></tr>
+      <tr><td>8.4.2010</td><td>China Telecom: 18 דקות שבהן תעבורת .mil ו-.gov עברה דרכה; 37,000 רשתות כולל Dell, CNN, Apple.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="col">
+  <div class="def"><span class="tag">הגנה היום</span><p><b>RPKI</b> (חתימה קריפטוגרפית על "AS X רשאי לפרסם Prefix Y", ו-Route Origin Validation שזורק פרסומים לא תקינים), סינון Prefixes מול לקוחות (MANRS), ו-BGPsec (חתימה על כל ה-Path, עדיין לא נפוץ). תקיפת MyEtherWallet (2018) חטפה את Route53 של Amazon בדיוק כך כדי לגנוב קריפטו.</p></div>
+  </div>
+</section>
+
+<section id="adv">
+  <h2><span class="n">12</span>תקיפות מתקדמות: Shrew, CXPST, Coremelt, Crossfire, Optimistic ACK</h2>
+  <div class="col"><p>הסוג החדש: לא תוקפים את הקורבן ישירות אלא את <b>הלינק המשותף</b> שהתעבורה שלו עוברת בו, או את <b>מנגנוני הבקרה של TCP</b>.</p></div>
+  <h3>Shrew: Low-rate TCP-targeted attack</h3>
+  <div class="col"><p>חדף (Shrew) הוא יונק קטן שתוקף חיות גדולות ממנו. TCP פועל בשתי סקאלות זמן: <b>RTT</b> (10–100ms, בקרת AIMD) ו-<b>RTO</b> (Retransmission Timeout, עם מינימום של <b>שנייה</b> לפי RFC 2988). כשיש איבוד חמור, השולח עוצר לגמרי ל-RTO ואז מתחיל מחדש ב-Slow start.</p></div>
+  <figure>
+    <svg viewBox="0 0 720 230" width="720" role="img" aria-label="Shrew">
+      <g font-size="12" direction="ltr">
+        <line x1="60" y1="190" x2="690" y2="190" stroke="var(--muted)"/><line x1="60" y1="190" x2="60" y2="20" stroke="var(--muted)"/>
+        <text x="690" y="210" text-anchor="end" fill="var(--muted)">time</text><text x="55" y="20" text-anchor="end" fill="var(--muted)">rate</text>
+        <rect x="80" y="40" width="30" height="150" fill="var(--atk)" opacity=".75"/><rect x="280" y="40" width="30" height="150" fill="var(--atk)" opacity=".75"/><rect x="480" y="40" width="30" height="150" fill="var(--atk)" opacity=".75"/>
+        <text x="95" y="34" text-anchor="middle" fill="var(--atk)">L ≈ RTT</text><text x="295" y="34" text-anchor="middle" fill="var(--atk)">R</text>
+        <path d="M60,180 L80,120 L110,190 L280,190 L280,188 M310,190 L330,188 L350,182 L370,170 L390,150 L410,120 L430,90 L450,70 L470,60 L480,60 L510,190 L680,190" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+        <line x1="110" y1="205" x2="280" y2="205" stroke="var(--ink)" marker-end="url(#ar)"/><text x="195" y="222" text-anchor="middle">T ≈ minRTO (1s)</text>
+        <text x="420" y="54" text-anchor="middle" fill="var(--accent)">cwnd (slow start)</text>
+      </g>
+    </svg>
+    <figcaption>פולס קצר (באורך RTT) גורם לאיבוד → כל הזרמים נכנסים ל-RTO ביחד. בדיוק כשהם יוצאים, פולס נוסף. ממוצע הקצב של התוקף נמוך, אבל ה-Throughput של TCP כמעט אפס.</figcaption>
+  </figure>
+  <div class="col">
+  <p>מודל: גל ריבועי עם אורך פולס <b>L</b>, קצב <b>R</b>, מחזור <b>T</b>. כש-R ועוד התעבורה הקיימת עוברים את קיבולת הלינק יש איבוד. בחירת L &gt; RTT ו-T מעט מעל minRTO מסנכרנת את כל זרמי ה-TCP לתקיפה.</p>
+  <div class="why"><span class="tag">העיקרון</span><p>Shrew מנצל <b>הומוגניות ודטרמיניזם</b>: כל ה-TCP מגיבים באותה דרך צפויה. יש Tradeoff בין צפיות לפגיעות. מנגנוני Anti-DoS מכוונים לקצבים גבוהים, וזיהוי Shrew נותן הרבה False alarms בגלל זרמים לגיטימיים "קופצניים". הגנה מוצעת: Randomization של minRTO.</p></div>
+  </div>
+  <div class="grid">
+    <div class="box"><h4>תקיפה על מושבי BGP</h4><p>BGP שולח Keepalive ב-TCP. זרם UDP שמציף את הלינק בין R1 ל-R2 גורם לאיבוד ה-Keepalive, שמשודר שוב אחרי minRTO, ואז 2·minRTO... עד שה-<b>Hold timer</b> פג והמושב נופל.</p></div>
+    <div class="box"><h4>CXPST</h4><p>Coordinated Cross Plane Session Termination: מפילים ומרימים לינקים נבחרים שוב ושוב → <b>Route flapping</b> מכוון. כל שינוי גורם לחישוב מחדש ולעדכונים בכל האינטרנט, ומעמיס את ה-CPU של המון נתבים.</p></div>
+    <div class="box"><h4>Coremelt</h4><p>1) בוחרים לינק מטרה. 2) מוצאים זוגות בוטים שהתעבורה ביניהם עוברת בו. 3) הבוטים שולחים זה לזה. כל התעבורה <b>רצויה</b> (הבוט השני רוצה אותה), אין זיוף ואין קורבן שמתלונן.</p></div>
+    <div class="box"><h4>Crossfire</h4><p>מנתק <b>אזור שלם</b> (N שרתים: ארגון, עיר, מדינה). 1) Traceroute מהבוטים לשרתים ציבוריים סביב האזור, בניית מפת לינקים (72% יציבים). 2) חישוב Flow density ובחירת לינקים. 3) כל בוט שולח זרם <b>חלש ולגיטימי</b> לשרת ציבורי, והם מצטברים על לינקי המטרה. מחליפים לינקים לפני שמתריעים (Moving target).</p></div>
+    <div class="box"><h4>Optimistic ACKing</h4><p>קצב TCP תלוי ב-RTT. מקבל זדוני שולח ACK על מידע <b>שעוד לא קיבל</b>, מדמה RTT קצר, וגורם לשרת לשלוח מהר מאוד. אין דרך חזקה לשולח לזהות לבד. עם הרבה לקוחות כאלה, השרת מציף את הרשת שלו עצמו.</p></div>
+  </div>
+  <div class="col"><div class="def"><span class="tag">הגנה (מעבר לשקפים)</span><p>נגד Optimistic ACK: Nonce ב-ACK (לדלג על סגמנטים אקראיים ולבדוק שהלקוח לא "אישר" אותם). נגד Crossfire/Coremelt: Traffic engineering דינמי וניתוב מחדש, ו-SDN שמזהה התגבשות של זרמים על לינק.</p></div></div>
+</section>
+
+<section id="review">
+  <h2><span class="n">13</span>חזרה מהירה למבחן</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>שאלה</th><th>תשובה קצרה</th></tr></thead>
+    <tbody>
+      <tr><td>3 סוגי DoS בסיסיים?</td><td>צריכת משאבים, שינוי/השמדת קונפיגורציה, השמדה פיזית.</td></tr>
+      <tr><td>למה SYN flood אסימטרי?</td><td>SYN לא עולה כלום; השרת מקצה מצב לכל SYN עד Timeout, ויש גבול לחצאי חיבורים.</td></tr>
+      <tr><td>מבנה SYN cookie?</td><td>5 ביט t mod 32, 3 ביט MSS, 24 ביט HMAC(סוד, כתובות, פורטים, t).</td></tr>
+      <tr><td>למה Cookie חייב להיות לא ניתן לזיוף?</td><td>אחרת אפשר לחשב ACK תקין מכתובת מזויפת.</td></tr>
+      <tr><td>Ingress filtering מול uRPF?</td><td>Ingress: זורק מקור שלא שייך לרשת שלך. uRPF: זורק אם הממשק לא תואם לטבלת הניתוב; דורש ניתוב סימטרי.</td></tr>
+      <tr><td>Teardrop / Bonk / LAND?</td><td>פרגמנטים חופפים / Offset ענק / מקור = יעד.</td></tr>
+      <tr><td>Ping of Death, החשבון?</td><td>65,535 − 20 − 8 = 65,507 בייט Data מקסימלי.</td></tr>
+      <tr><td>תנאים להגברה + דוגמאות?</td><td>UDP, תשובה גדולה, שרתים פתוחים. NTP ×206, DNS ×50.</td></tr>
+      <tr><td>למה /24 של פקיסטן ניצח?</td><td>BGP מעדיף תמיד את ה-Prefix הספציפי ביותר.</td></tr>
+      <tr><td>Shrew: L ו-T?</td><td>L ≈ RTT, T ≈ minRTO (שנייה). TCP נכנס ל-RTO שוב ושוב.</td></tr>
+      <tr><td>Coremelt מול Crossfire?</td><td>Coremelt: תעבורה בין זוגות בוטים דרך לינק. Crossfire: בוטים לשרתים ציבוריים סביב אזור, כדי לנתק אזור שלם.</td></tr>
+      <tr><td>Slowloris?</td><td>בקשות HTTP חלקיות שלעולם לא מסתיימות, תופסות את כל ה-Workers.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src col">מקור: "05 Network 3 DDOS 2015-07.pdf" (132 שקפים). Memcached, Mirai, RPKI ושאר "עולם אמיתי" שלא בשקפים הם תוספות שלי.</p>
+</section>
