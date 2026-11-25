@@ -1,0 +1,139 @@
+<header class="top"><div class="eyebrow">Computer Networks · Chapter N04</div><h1>E-mail and DNS</h1><p class="lead">Lecture 4 covers two application protocols that everything else depends on. E-mail shows a push protocol (SMTP) next to pull protocols (IMAP, POP3) and a text-based command/response dialogue. DNS shows how a distributed, hierarchical database answers billions of name lookups a day, mostly from caches.</p><nav class="toc" aria-label="Sections"><a href="#mail">E-mail parts</a><a href="#smtp">SMTP</a><a href="#dialog">SMTP dialogue</a><a href="#format">Message format</a><a href="#access">IMAP and POP3</a><a href="#dns">DNS services</a><a href="#hier">Hierarchy</a><a href="#resolve">Iterative vs recursive</a><a href="#rr">Resource records</a><a href="#dnsmsg">DNS messages</a><a href="#register">Adding a domain</a><a href="#dnssec">DNS security</a><a href="#review">Review</a></nav></header>
+<section id="mail">
+<h2><span class="n">1</span>E-mail: three major components</h2>
+<div class="tbl"><table><thead><tr><th>Component</th><th>Role</th></tr></thead><tbody><tr><td><b>User agent</b> (mail reader)</td><td>Compose, edit, read messages: Outlook, Apple Mail, Thunderbird, a webmail page. Outgoing and incoming messages are stored on the server.</td></tr><tr><td><b>Mail servers</b></td><td>A <b>mailbox</b> holds incoming messages for each user; a <b>message queue</b> holds outgoing messages waiting to be sent.</td></tr><tr><td><b>SMTP</b></td><td>Simple Mail Transfer Protocol (RFC 5321): moves messages between mail servers. The sending server acts as the SMTP <i>client</i>, the receiving server as the SMTP <i>server</i>.</td></tr></tbody></table></div>
+<div class="steps"><span class="tag">Alice sends a message to Bob</span><ol><li>Alice composes a message to <code>bob@someschool.edu</code> in her user agent.</li><li>Her UA sends it to <b>her</b> mail server (submission, SMTP on port 587); the message is placed in the message queue.</li><li>Alice's server, as SMTP client, looks up the MX record of someschool.edu in DNS and opens a TCP connection to Bob's server on <b>port 25</b>.</li><li>It sends the message over that connection with the SMTP dialogue.</li><li>Bob's server places the message in Bob's mailbox.</li><li>Bob's UA reads it with a <b>pull</b> protocol: IMAP or HTTP (webmail).</li></ol></div>
+<div class="def"><span class="tag">Remember</span><p>There is no direct connection between Alice's and Bob's computers, and usually no intermediate mail servers: Alice's server talks directly to Bob's server. If Bob's server is down, the message stays in Alice's server queue and is retried (typically every 30 minutes for a few days).</p></div>
+</section>
+<section id="smtp">
+<h2><span class="n">2</span>SMTP properties</h2>
+<div class="col"><ul><li>Uses <b>TCP</b> to reliably transfer messages, server port <b>25</b>.</li><li>Three phases of transfer: <b>handshaking</b> (greeting), <b>transfer of messages</b>, <b>closure</b>.</li><li>Command/response interaction, like HTTP: commands are ASCII text, responses are a status code and phrase.</li><li>Messages (header and body) must be in <b>7-bit ASCII</b>. Binary attachments are encoded to ASCII with MIME (base64).</li><li><b>Persistent connections</b>: several messages to the same server go over one TCP connection.</li><li>The end of a message is marked by <code>CRLF.CRLF</code> (a line with a single dot).</li></ul></div>
+<div class="tbl"><table><thead><tr><th></th><th>HTTP</th><th>SMTP</th></tr></thead><tbody><tr><td>Direction</td><td><b>Pull</b>: the client pulls objects from the server</td><td><b>Push</b>: the client pushes the message to the server</td></tr><tr><td>Objects per message</td><td>Each object in its own response message</td><td>Several objects sent in one multipart message</td></tr><tr><td>Encoding</td><td>Any bytes in the body</td><td>7-bit ASCII only</td></tr><tr><td>Common ground</td><td>ASCII command/response, status codes</td><td>ASCII command/response, status codes</td></tr></tbody></table></div>
+</section>
+<section id="dialog">
+<h2><span class="n">3</span>A full SMTP dialogue</h2>
+<div class="col"><p>S = server (crepes.fr receiving), C = client (hamburger.edu sending). Before this, a TCP handshake to port 25 took 1 RTT.</p></div>
+<pre class="code" dir="ltr">S: 220 hamburger.edu                         ← greeting
+C: HELO crepes.fr                             ← handshake (EHLO for extended SMTP)
+S: 250 Hello crepes.fr, pleased to meet you
+C: MAIL FROM: &lt;alice@crepes.fr&gt;              ← envelope sender
+S: 250 alice@crepes.fr... Sender ok
+C: RCPT TO: &lt;bob@hamburger.edu&gt;              ← envelope recipient (repeat for each)
+S: 250 bob@hamburger.edu ... Recipient ok
+C: DATA
+S: 354 Enter mail, end with "." on a line by itself
+C: Do you like ketchup?
+C: How about pickles?
+C: .                                           ← end of message (CRLF.CRLF)
+S: 250 Message accepted for delivery
+C: QUIT
+S: 221 hamburger.edu closing connection</pre>
+<div class="col"><p>Try it yourself in a lab: <code>telnet &lt;servername&gt; 25</code> and type the commands. (Real servers today require STARTTLS and authentication for submission, and spam filters reject most hand-typed mail.)</p></div>
+<div class="atk"><span class="tag">Exam trap</span><p>The <b>envelope</b> (MAIL FROM / RCPT TO) is what servers route on; the <code>From:</code> / <code>To:</code> lines inside DATA are just text the user sees. Nothing in plain SMTP checks that they match, which is exactly why spoofing works and why SPF, DKIM and DMARC exist (<a href="#ch-08--spoof">security chapter 08</a>).</p></div>
+</section>
+<section id="format">
+<h2><span class="n">4</span>Mail message format (RFC 5322) and MIME</h2>
+<div class="col"><p>RFC 5321 (SMTP) defines how to <b>transfer</b> a message; RFC 5322 defines the message <b>itself</b>: header lines, a blank line, then the body (ASCII only).</p></div>
+<pre class="code" dir="ltr">From: alice@crepes.fr
+To: bob@hamburger.edu
+Subject: Searching for the meaning of life.
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="XYZ"
+
+--XYZ
+Content-Type: text/plain; charset=UTF-8
+
+Hi Bob, see the picture.
+--XYZ
+Content-Type: image/jpeg
+Content-Transfer-Encoding: base64
+
+/9j/4AAQSkZJRgABAQEASABIAAD...
+--XYZ--</pre>
+<div class="col"><p><b>MIME</b> (Multipurpose Internet Mail Extensions) adds headers that declare the content type and the encoding, so binary data (images, PDFs) and non-English text can travel inside a 7-bit ASCII message. Base64 turns every 3 bytes into 4 ASCII characters (33% larger).</p></div>
+</section>
+<section id="access">
+<h2><span class="n">5</span>Mail access protocols: IMAP, POP3, HTTP</h2>
+<div class="col"><p>SMTP is a push protocol, so the recipient cannot use it to fetch mail from its own server. A pull protocol is needed for the last step.</p></div>
+<div class="tbl"><table><thead><tr><th>Protocol</th><th>Port</th><th>Behaviour</th></tr></thead><tbody><tr><td>IMAP</td><td>143 (993 TLS)</td><td>Messages stay on the server. Supports folders, retrieval, deletion, flags. Keeps state across sessions, so all your devices see the same mailbox.</td></tr><tr><td>POP3</td><td>110 (995 TLS)</td><td>Authorization phase (user, pass), then transaction phase (list, retr, dele, quit). "Download and delete" mode removes mail from the server, so a second device sees nothing; "download and keep" leaves copies. Stateless across sessions.</td></tr><tr><td>HTTP(S)</td><td>443</td><td>Webmail (Gmail, Outlook.com): the browser talks HTTPS to the web server, which uses IMAP/SMTP behind the scenes.</td></tr></tbody></table></div>
+</section>
+<section id="dns">
+<h2><span class="n">6</span>DNS: what it provides and why it is distributed</h2>
+<div class="col"><p>People use names (<code>www.yahoo.com</code>); routers use 32-bit IP addresses. The <b>Domain Name System</b> maps between them. It is a distributed database implemented in a hierarchy of many name servers, and an application-layer protocol that hosts and servers use to query it. It runs over <b>UDP port 53</b> (TCP 53 for large answers and zone transfers).</p></div>
+<div class="tbl"><table><thead><tr><th>Service</th><th>Meaning</th></tr></thead><tbody><tr><td>Hostname → IP translation</td><td>The main job (A / AAAA records)</td></tr><tr><td>Host aliasing</td><td>A canonical name with easier aliases (CNAME)</td></tr><tr><td>Mail server aliasing</td><td><code>@company.com</code> → the actual mail server (MX)</td></tr><tr><td>Load distribution</td><td>Many IPs for one name; DNS rotates the order (replicated web servers, CDNs)</td></tr></tbody></table></div>
+<div class="why"><span class="tag">Why</span><p>Why not one central DNS server? It would be a single point of failure, would carry the whole world's query volume (Akamai alone sees trillions of queries a day), would be far from most users, and would be impossible to maintain. "It doesn't scale."</p></div>
+</section>
+<section id="hier">
+<h2><span class="n">7</span>The DNS hierarchy</h2>
+<pre class="code" dir="ltr">                        Root DNS servers  (".")
+          ┌──────────────────┼────────────────────┐
+     .com servers        .org servers          .edu servers        ← TLD
+    ┌──────┴──────┐           │              ┌──────┴──────┐
+ yahoo.com    amazon.com    pbs.org      nyu.edu      umass.edu    ← authoritative</pre>
+<div class="tbl"><table><thead><tr><th>Level</th><th>Who runs it</th><th>What it knows</th></tr></thead><tbody><tr><td><b>Root</b></td><td>13 logical root "servers" (a.root-servers.net … m.), each replicated hundreds of times with anycast; ICANN manages the root zone</td><td>Where the TLD servers are</td></tr><tr><td><b>TLD</b> (top-level domain)</td><td>.com/.net: Verisign; .edu: Educause; country TLDs (.il, .uk, .fr)</td><td>Where each domain's authoritative servers are</td></tr><tr><td><b>Authoritative</b></td><td>The organization itself or its provider</td><td>The actual records of the organization's hosts</td></tr><tr><td><b>Local DNS server</b> (resolver)</td><td>Your ISP, company, or a public one (8.8.8.8, 1.1.1.1). Not strictly part of the hierarchy</td><td>Nothing by itself: it queries on your behalf and caches answers</td></tr></tbody></table></div>
+<figure><svg viewBox="0 0 720 265" width="720" role="img" aria-label="The DNS hierarchy" dir="ltr" style="direction:ltr"><g font-size="13"><rect x="310" y="15" width="100" height="38" rx="8" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="1.5"/><text x="360" y="38.5" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">Root</text><rect x="90" y="95" width="100" height="36" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="140" y="113" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">.com</text><text x="140" y="128" font-size="11" text-anchor="middle" fill="var(--muted)">TLD</text><line x1="360" y1="53" x2="140" y2="95" stroke="var(--line)" stroke-width="1.6"/><rect x="310" y="95" width="100" height="36" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="360" y="113" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">.org</text><text x="360" y="128" font-size="11" text-anchor="middle" fill="var(--muted)">TLD</text><line x1="360" y1="53" x2="360" y2="95" stroke="var(--line)" stroke-width="1.6"/><rect x="530" y="95" width="100" height="36" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="580" y="113" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">.edu</text><text x="580" y="128" font-size="11" text-anchor="middle" fill="var(--muted)">TLD</text><line x1="360" y1="53" x2="580" y2="95" stroke="var(--line)" stroke-width="1.6"/><rect x="10" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="65" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">yahoo.com</text><text x="65" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="140" y1="131" x2="65" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="140" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="195" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">amazon.com</text><text x="195" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="140" y1="131" x2="195" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="275" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="330" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">pbs.org</text><text x="330" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="360" y1="131" x2="330" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="450" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="505" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">nyu.edu</text><text x="505" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="580" y1="131" x2="505" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="585" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="640" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">umass.edu</text><text x="640" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="580" y1="131" x2="640" y2="180" stroke="var(--line)" stroke-width="1.6"/><text x="360" y="250" font-size="11.5" text-anchor="middle" fill="var(--muted)">Root: 13 logical servers (anycast), know the TLDs · TLD: know the authoritative servers · Authoritative: hold the records</text></g></svg><figcaption>To find www.amazon.com, a resolver asks a root server for the .com servers, a .com server for amazon.com's authoritative server, and that server for the A record.</figcaption></figure>
+
+</section>
+<section id="resolve">
+<h2><span class="n">8</span>Iterative vs recursive resolution</h2>
+<div class="col"><p>Host <code>cis.poly.edu</code> wants the IP of <code>gaia.cs.umass.edu</code>. It always asks its <b>local DNS server</b> (that first query is recursive: "get me the answer").</p></div>
+<figure><svg viewBox="0 0 720 300" width="720" role="img" aria-label="Iterated DNS resolution" dir="ltr" style="direction:ltr"><g font-size="13"><rect x="20" y="170" width="120" height="44" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/><text x="80" y="192" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">Host</text><text x="80" y="207" font-size="11" text-anchor="middle" fill="var(--muted)">cis.poly.edu</text><rect x="230" y="170" width="130" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/><text x="295" y="192" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">Local DNS</text><text x="295" y="207" font-size="11" text-anchor="middle" fill="var(--muted)">dns.poly.edu</text><rect x="450" y="20" width="120" height="40" rx="8" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="1.5"/><text x="510" y="44.5" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">Root</text><rect x="560" y="110" width="120" height="40" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="620" y="134.5" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">TLD .edu</text><rect x="450" y="210" width="140" height="40" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="520" y="230" font-size="11" text-anchor="middle" font-weight="700" fill="var(--ink)">Authoritative</text><text x="520" y="245" font-size="11" text-anchor="middle" fill="var(--muted)">dns.cs.umass.edu</text><line x1="140" y1="186" x2="228" y2="186" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="184" y="178" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">1</text><line x1="228" y1="200" x2="142" y2="200" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="184" y="216" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">8</text><line x1="330" y1="168" x2="452" y2="50" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="380" y="100" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">2</text><line x1="458" y1="60" x2="346" y2="170" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="410" y="132" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">3</text><line x1="362" y1="178" x2="558" y2="132" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="470" y="148" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">4</text><line x1="560" y1="142" x2="364" y2="190" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="470" y="176" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">5</text><line x1="362" y1="204" x2="448" y2="228" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="400" y="230" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">6</text><line x1="448" y1="240" x2="360" y2="214" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="410" y="250" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">7</text><text x="360" y="285" font-size="11.5" text-anchor="middle" fill="var(--muted)">Iterative: 2, 4, 6 are queries; 3 and 5 answer "ask this server"; 7 is the answer. 1 and 8 are recursive.</text></g></svg><figcaption>cis.poly.edu wants gaia.cs.umass.edu. The host asks its local server recursively; the local server walks the hierarchy iteratively and caches every answer.</figcaption></figure>
+
+<div class="grid"><div class="box"><h4>Iterated query (the usual case)</h4><p>The local server asks the root → the root answers "I don't know, ask the .edu TLD at this address" (a <b>referral</b>) → the local server asks the TLD → referral to umass.edu's authoritative server → the local server asks it and gets the A record.</p><p>8 messages: host↔local (2) + local↔root (2) + local↔TLD (2) + local↔authoritative (2). The load stays on the local server.</p></div><div class="box"><h4>Recursive query</h4><p>Each server asks the next one on behalf of the previous: local → root → TLD → authoritative, and the answer travels back along the same chain.</p><p>Also 8 messages, but it puts a heavy load on the upper levels, so root and TLD servers do not do it in practice.</p></div></div>
+<h3>Caching and TTL</h3>
+<div class="col"><p>Once any server learns a mapping, it <b>caches</b> it for the record's <b>TTL</b>. TLD server addresses are usually cached in local servers, so the root is rarely visited. Cached entries may be <b>out of date</b>: if a host changes its IP, the world may not know until all TTLs expire ("best-effort name-to-address translation").</p></div>
+<div class="box worked"><h4>DNS + HTTP timing (classic)</h4><p class="note">Given</p><ul><li>The host's local DNS cache is empty. Resolving the name needs n DNS servers with RTTs RTT<sub>1</sub>…RTT<sub>n</sub>. RTT<sub>0</sub> to the web server; the page is one small object.</li></ul><p class="note">Solution</p><ol><li>Time from click to page = (RTT<sub>1</sub> + … + RTT<sub>n</sub>) + 2·RTT<sub>0</sub></li><li>Without any cache, each of the 3 levels (root, TLD, authoritative) costs a query: three times the per-query time on top of the local server RTT.</li><li>A second visit within the TTL skips DNS entirely.</li></ol></div>
+</section>
+<section id="rr">
+<h2><span class="n">9</span>Resource records</h2>
+<div class="col"><p>DNS stores <b>resource records</b> of the form <code>(name, value, type, ttl)</code>.</p></div>
+<div class="tbl"><table><thead><tr><th>Type</th><th>name</th><th>value</th><th>Example</th></tr></thead><tbody><tr><td><b>A</b></td><td>hostname</td><td>IPv4 address</td><td><code>(relay1.bar.foo.com, 145.37.93.126, A)</code></td></tr><tr><td><b>AAAA</b></td><td>hostname</td><td>IPv6 address</td><td><code>(www.example.com, 2606:2800:220:1::248, AAAA)</code></td></tr><tr><td><b>NS</b></td><td>domain</td><td>hostname of an authoritative name server for the domain</td><td><code>(foo.com, dns.foo.com, NS)</code></td></tr><tr><td><b>CNAME</b></td><td>alias</td><td>canonical (real) name</td><td><code>(www.ibm.com, servereast.backup2.ibm.com, CNAME)</code></td></tr><tr><td><b>MX</b></td><td>domain</td><td>name of the mail server (with a preference number)</td><td><code>(foo.com, 10 mail.bar.foo.com, MX)</code></td></tr><tr><td>PTR</td><td>reversed IP (in-addr.arpa)</td><td>hostname (reverse lookup)</td><td><code>(126.93.37.145.in-addr.arpa, relay1.bar.foo.com, PTR)</code></td></tr><tr><td>TXT / SOA</td><td></td><td>Free text (SPF, DKIM keys, verification); zone start of authority (serial, refresh, default TTL)</td><td></td></tr></tbody></table></div>
+<div class="def"><span class="tag">Remember</span><p>An NS record usually comes with an A record ("glue") for the name server itself, otherwise you would need DNS to find the DNS server.</p></div>
+</section>
+<section id="dnsmsg">
+<h2><span class="n">10</span>DNS protocol messages</h2>
+<div class="col"><p>Query and reply messages have the <b>same format</b>: a 12-byte header followed by four variable sections.</p></div>
+<div class="bitwrap"><div class="bits" role="img" aria-label="DNS message: 12-byte header + 4 sections">
+<div class="sc" style="grid-column:span 4">0</div>
+<div class="sc" style="grid-column:span 4">4</div>
+<div class="sc" style="grid-column:span 4">8</div>
+<div class="sc" style="grid-column:span 4">12</div>
+<div class="sc" style="grid-column:span 4">16</div>
+<div class="sc" style="grid-column:span 4">20</div>
+<div class="sc" style="grid-column:span 4">24</div>
+<div class="sc" style="grid-column:span 4">28</div>
+<div class="key" style="grid-column:span 16">Identification<small>16-bit # matches reply to query</small></div>
+<div class="" style="grid-column:span 16">Flags<small>QR, opcode, AA, TC, RD, RA, rcode</small></div>
+<div class="" style="grid-column:span 16"># questions</div>
+<div class="" style="grid-column:span 16"># answer RRs</div>
+<div class="" style="grid-column:span 16"># authority RRs</div>
+<div class="" style="grid-column:span 16"># additional RRs</div>
+<div class="" style="grid-column:span 32">Questions (variable): name, type</div>
+<div class="hot" style="grid-column:span 32">Answers (variable): RRs in response to the query</div>
+<div class="" style="grid-column:span 32">Authority (variable): records for authoritative servers</div>
+<div class="" style="grid-column:span 32">Additional info (variable): extra helpful records (glue)</div>
+</div></div>
+<p class="note" style="text-align:center">DNS message: 12-byte header + 4 sections</p>
+<div class="tbl"><table><thead><tr><th>Flag</th><th>Meaning</th></tr></thead><tbody><tr><td>QR</td><td>0 = query, 1 = reply</td></tr><tr><td>AA</td><td>Authoritative answer: the replying server is authoritative for the name</td></tr><tr><td>RD</td><td>Recursion desired (set by the client)</td></tr><tr><td>RA</td><td>Recursion available (set by the server)</td></tr><tr><td>TC</td><td>Truncated: the answer did not fit in a UDP datagram, retry over TCP</td></tr><tr><td>rcode</td><td>0 no error, 3 NXDOMAIN (name does not exist)</td></tr></tbody></table></div>
+<pre class="code" dir="ltr">$ dig +norecurse @a.root-servers.net gaia.cs.umass.edu A
+;; flags: qr; QUERY: 1, ANSWER: 0, AUTHORITY: 13, ADDITIONAL: 26   ← referral, no answer
+;; AUTHORITY SECTION:
+edu.            172800  IN  NS  a.edu-servers.net.
+...
+$ dig gaia.cs.umass.edu A        (through your resolver)
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1
+gaia.cs.umass.edu.  3600  IN  A  128.119.245.12</pre>
+</section>
+<section id="register">
+<h2><span class="n">11</span>Putting your domain into DNS</h2>
+<div class="steps"><span class="tag">Example: startup "Network Utopia"</span><ol><li>Register <code>networkutopia.com</code> with a <b>registrar</b> (accredited by ICANN). Provide the names and IPs of your authoritative name servers (primary and secondary).</li><li>The registrar inserts two records into the .com TLD server: <code>(networkutopia.com, dns1.networkutopia.com, NS)</code> and <code>(dns1.networkutopia.com, 212.212.212.1, A)</code>.</li><li>On your authoritative server, create the A record for <code>www.networkutopia.com</code> and the MX record for <code>networkutopia.com</code>.</li></ol></div>
+</section>
+<section id="dnssec">
+<h2><span class="n">12</span>DNS security (bridge to the security course)</h2>
+<div class="tbl"><table><thead><tr><th>Attack</th><th>Idea</th><th>Where</th></tr></thead><tbody><tr><td>DDoS on root/TLD servers</td><td>Flood them with traffic. Root attacks have not succeeded so far (anycast, filtering, local caching of TLD addresses); TLD attacks are more dangerous.</td><td><a href="#ch-05">05</a></td></tr><tr><td>Cache poisoning / spoofing</td><td>Send forged replies to a resolver so it caches a wrong IP</td><td><a href="#ch-04--dns">04</a></td></tr><tr><td>Reflection / amplification</td><td>Small spoofed query, large reply sent to the victim</td><td><a href="#ch-05">05</a></td></tr><tr><td>DNSSEC</td><td>Defense: authoritative servers sign their records (RFC 4033), resolvers verify the chain of signatures from the root</td><td><a href="#ch-07">07</a></td></tr></tbody></table></div>
+</section>
+<section id="review">
+<h2><span class="n">13</span>Review</h2>
+<div class="col review"><details><summary>Why is SMTP called a push protocol, and what does Bob use to read his mail?</summary><p>The sender initiates the connection and pushes the message to the receiving server. Bob pulls it from his server with IMAP, POP3 or HTTP.</p></details><details><summary>Which record does Alice's mail server look up to deliver to @someschool.edu?</summary><p>The MX record of someschool.edu, then the A record of the mail server it names.</p></details><details><summary>In an iterative resolution, who does the work?</summary><p>The local DNS server: it sends each query itself and follows the referrals from root to TLD to authoritative.</p></details><details><summary>What happens to a cached record after its TTL?</summary><p>It is discarded, and the next lookup goes to the hierarchy again.</p></details><details><summary>Why does DNS use UDP?</summary><p>Queries are small and must be fast: no handshake RTT and no connection state on busy servers. The client simply retries on loss; TCP is used when the answer is too big (TC flag) or for zone transfers.</p></details></div>
+<div class="quiz-mount" data-quiz="n04"></div>
+</section>

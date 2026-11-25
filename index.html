@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NetSec Study Hub · HIT</title>
-<meta name="description" content="A study companion for the HIT course Network and Server Security (אבטחת רשתות ומשרתת) by Eden Alon: 11 chapters, packet-level explanations and step-by-step animations.">
+<title>Networks & Security Hub · HIT</title>
+<meta name="description" content="A study companion by Eden Alon for two HIT courses: Computer Networks (רשתות תקשורת) and Network and Server Security (אבטחת רשתות ומשרתת). Packet-level chapters in English and Hebrew, step-by-step animations and practice quizzes.">
 <meta name="author" content="Eden Alon">
-<meta property="og:title" content="NetSec Study Hub · HIT">
-<meta property="og:description" content="Network and server security, explained down to every packet and header. A study companion by Eden Alon.">
+<meta property="og:title" content="Networks & Security Hub · HIT">
+<meta property="og:description" content="Computer networks and network security, explained down to every packet and header. A study companion by Eden Alon.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 4 7v8c0 8 5 13 12 15 7-2 12-7 12-15V7z' fill='%230f7c8c'/%3E%3C/svg%3E">
 <script>(function(){var l='en';try{l=localStorage.getItem('netsec-lang')||'en'}catch(e){}if(l!=='he')l='en';window.LANG=l;var d=document.documentElement;d.lang=l;d.dir=l==='he'?'rtl':'ltr';})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -245,6 +245,43 @@ td.num{font-variant-numeric:tabular-nums}
 .disclaimer{margin:2.4rem 0 2rem;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1rem}
 .rail .grp{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:.9rem .5rem .2rem}
 @media (max-width:820px){.intro{grid-template-columns:1fr}.subj-h{flex-wrap:wrap}.subj-h p{margin:0;flex-basis:100%}}
+
+/* two-course hub, worked examples, review, quizzes */
+.rail .crs{font-family:var(--f-display);font-weight:700;font-size:.86rem;color:var(--ink);margin:1.1rem .5rem .1rem;padding-top:.6rem;border-top:1px solid var(--line)}
+.course{margin:2.6rem 0 0}
+.course-h{background:var(--surface);border:1px solid var(--line);border-inline-start:5px solid var(--accent);border-radius:12px;padding:1rem 1.2rem}
+.course-h h2{margin:.15rem 0 .3rem;font-size:1.45rem;display:block}
+.course-h h2 .he{font-size:1.05rem;color:var(--muted);font-weight:600;margin-inline-start:.4rem}
+.course-h p{margin:0;color:var(--muted)}
+.ctag{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+:root[lang="he"] .ctag{font-family:var(--f-body);letter-spacing:0}
+.worked{margin:1rem 0;border-inline-start:4px solid var(--accent)}
+.worked ul,.worked ol{margin:.2rem 0 .5rem}
+.worked .note{margin:.4rem 0 0;font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+:root[lang="he"] .worked .note{font-family:var(--f-body);letter-spacing:0}
+.review details{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:.5rem 0;padding:.55rem .9rem}
+.review summary{cursor:pointer;font-weight:600}
+.review details p{margin:.5rem 0 .1rem;color:var(--ink)}
+.quiz{margin:1.6rem 0 0;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:1rem 1.1rem}
+.quiz-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1rem;margin-bottom:.6rem}
+.quiz-h h3{margin:0}
+.quiz-h .score{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);margin-inline-start:auto}
+.qq{border-top:1px solid var(--line);padding:.9rem 0 .4rem}
+.qq:first-of-type{border-top:0}
+.qq .qn{font-family:var(--f-mono);font-size:.72rem;color:var(--accent)}
+.qq .qt{font-weight:600;margin:.2rem 0 .5rem}
+.qq .opts{display:grid;gap:.4rem}
+.qq .opt{display:flex;gap:.6rem;align-items:flex-start;text-align:start;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:.5rem .75rem;cursor:pointer;line-height:1.45}
+.qq .opt b{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);min-width:1.1rem}
+.qq .opt:hover:not([disabled]){border-color:var(--accent)}
+.qq .opt[disabled]{cursor:default}
+.qq .opt.ok{border-color:var(--def);background:var(--def-soft)}
+.qq .opt.bad{border-color:var(--atk);background:var(--atk-soft)}
+.qq .ex{margin:.6rem 0 0;padding:.6rem .8rem;border-radius:8px;background:var(--accent-soft);font-size:.92rem}
+.quiz-tools{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}
+.quiz-tools select{max-width:100%;min-width:0}
+.quiz-tools button,.quiz-tools select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:.4rem .8rem;cursor:pointer}
+.quiz-tools button.pri{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
 </style>
 </head>
 <body>
@@ -253,7 +290,7 @@ td.num{font-variant-numeric:tabular-nums}
 
 <div class="bar"><div class="bar-in">
   <button class="menu-btn" id="menuBtn" type="button" aria-label="Chapters" aria-expanded="false">☰</button>
-  <a class="brand" href="#home"><i>HIT</i><span>NetSec Study Hub</span></a>
+  <a class="brand" href="#home"><i>HIT</i><span>Networks &amp; Security Hub</span></a>
   <div class="search" role="search">
     <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
     <input id="q" type="search" placeholder="Search topics, headers, tools… (press /)" autocomplete="off" aria-label="Search the course">
@@ -277,10 +314,24 @@ td.num{font-variant-numeric:tabular-nums}
 
 <script src="anim-he.js"></script>
 <script src="anim.js"></script>
+<script src="anim-net.js"></script>
+<script src="quiz.js"></script>
 <script>
 (function(){
 'use strict';
 const CH = [
+  {id:'n01',file:'n01-internet.html',t:'The Internet and its layers',d:'Edge and core, packet vs circuit switching, ISPs, the 5-layer stack and encapsulation.',ht:'האינטרנט והשכבות שלו',hd:'קצה וליבה, packet מול circuit switching, ספקים, מחסנית 5 השכבות ו-encapsulation.'},
+  {id:'n02',file:'n02-delay.html',t:'Delay, loss and throughput',d:'The four delays, traffic intensity, traceroute, bottleneck throughput, with worked numbers.',ht:'השהיה, אובדן ותפוקה',hd:'ארבע ההשהיות, עוצמת תעבורה, traceroute, תפוקת צוואר בקבוק, עם חישובים מלאים.'},
+  {id:'n03',file:'n03-http.html',t:'Application layer and HTTP',d:'Client-server and P2P, transport services, HTTP/1.0 to HTTP/3, RTT math, cookies, web caches.',ht:'שכבת האפליקציה ו-HTTP',hd:'לקוח-שרת ו-P2P, שירותי תעבורה, HTTP/1.0 עד HTTP/3, חישובי RTT, cookies, מטמון web.'},
+  {id:'n04',file:'n04-email-dns.html',t:'E-mail and DNS',d:'SMTP dialogue, IMAP/POP3, MIME; DNS hierarchy, iterative vs recursive, records, message format.',ht:'דואר אלקטרוני ו-DNS',hd:'שיחת SMTP, ‏IMAP/POP3, ‏MIME; היררכיית DNS, איטרטיבי מול רקורסיבי, רשומות, מבנה הודעה.'},
+  {id:'n05',file:'n05-p2p-video-sockets.html',t:'P2P, video streaming and sockets',d:'File distribution time, BitTorrent, DASH and CDNs, UDP and TCP socket programming in Python.',ht:'P2P, וידאו וסוקטים',hd:'זמן הפצת קובץ, BitTorrent, ‏DASH ו-CDN, תכנות sockets ב-UDP וב-TCP בפייתון.'},
+  {id:'n06',file:'n06-transport-rdt.html',t:'Transport layer and reliable data transfer',d:'Multiplexing, UDP and its checksum, rdt 1.0 to 3.0, utilization, Go-Back-N and Selective Repeat.',ht:'שכבת התעבורה והעברה אמינה',hd:'Multiplexing, ‏UDP וה-checksum שלו, rdt 1.0 עד 3.0, ניצולת, Go-Back-N ו-Selective Repeat.'},
+  {id:'n07',file:'n07-tcp.html',t:'TCP',d:'Segment structure, seq/ack, RTT estimation, fast retransmit, flow control, handshake, congestion control.',ht:'TCP',hd:'מבנה segment, ‏seq/ack, הערכת RTT, ‏fast retransmit, בקרת זרימה, handshake, בקרת עומס.'},
+  {id:'n08',file:'n08-network-data.html',t:'Network layer: data plane',d:'Router internals, IPv4 header and fragmentation, CIDR and subnetting, DHCP, NAT, IPv6, SDN forwarding.',ht:'שכבת הרשת: מישור הנתונים',hd:'מבנה נתב, IPv4 ופיצול, CIDR וחלוקה לרשתות, DHCP, ‏NAT, ‏IPv6, העברה ב-SDN.'},
+  {id:'n09',file:'n09-network-control.html',t:'Network layer: control plane',d:'Dijkstra link state, Bellman-Ford distance vector, OSPF, BGP, ICMP, SDN controllers, SNMP.',ht:'שכבת הרשת: מישור הבקרה',hd:'Link state עם Dijkstra, ‏distance vector עם Bellman-Ford, ‏OSPF, ‏BGP, ‏ICMP, בקרי SDN, ‏SNMP.'},
+  {id:'n10',file:'n10-link.html',t:'Link layer and LANs',d:'Parity, checksum and CRC, multiple access (ALOHA, CSMA/CD), MAC and ARP, Ethernet, switches, VLANs.',ht:'שכבת הקו ורשתות LAN',hd:'Parity, ‏checksum ו-CRC, גישה מרובה (ALOHA, ‏CSMA/CD), ‏MAC ו-ARP, ‏Ethernet, ‏switches, ‏VLAN.'},
+  {id:'n11',file:'n11-exam.html',t:'Exam toolkit',d:'Every formula on one page, solved calculation patterns, a day in the life of a web request.',ht:'ערכת מבחן',hd:'כל הנוסחאות בעמוד אחד, תבניות חישוב פתורות, יום בחיי בקשת web.'},
+  {id:'n12',file:'n12-tools-lab.html',t:'Network tools lab',d:'Wireshark, tcpdump, ping, traceroute, dig, curl, netcat, ss, iperf3: guides, commands and one exercise per chapter.',ht:'מעבדת כלי רשת',hd:'Wireshark, ‏tcpdump, ‏ping, ‏traceroute, ‏dig, ‏curl, ‏netcat, ‏ss, ‏iperf3: מדריכים, פקודות ותרגיל לכל פרק.'},
   {id:'00',file:'00-packets.html',t:'Packet foundations',d:'Ethernet, ARP, IPv4, fragmentation, ICMP, TCP, UDP, DNS: every header field and why it exists.',ht:'יסודות ה-packet',hd:'Ethernet, ARP, IPv4, פיצול, ICMP, TCP, UDP, DNS: כל שדה header ולמה הוא קיים.'},
   {id:'01',file:'01-intro.html',t:'Intro to cyber security',d:'CIA, threats vs vulnerabilities, attack phases, defense in depth.',ht:'מבוא לאבטחת סייבר',hd:'CIA, איומים מול פגיעויות, שלבי תקיפה, הגנה לעומק.'},
   {id:'02',file:'02-osint.html',t:'OSINT and reconnaissance',d:'Footprinting, whois, DNS, Google dorks, Shodan, social engineering.',ht:'OSINT וסיור',hd:'Footprinting, whois, DNS, Google dorks, Shodan, הנדסה חברתית.'},
@@ -291,15 +342,36 @@ const CH = [
   {id:'07',file:'07-public-key.html',t:'Public-key cryptography',d:'Diffie-Hellman, RSA, signatures, hashes, certificates and PKI.',ht:'הצפנה במפתח ציבורי',hd:'Diffie-Hellman, RSA, חתימות, hash, תעודות ו-PKI.'},
   {id:'08',file:'08-email.html',t:'Email security',d:'SMTP path, PGP step by step, S/MIME, SPF, DKIM, DMARC.',ht:'אבטחת דואר אלקטרוני',hd:'מסלול SMTP, PGP צעד אחרי צעד, S/MIME, SPF, DKIM, DMARC.'},
   {id:'09',file:'09-firewalls.html',t:'Firewalls and access control',d:'Stateless vs stateful, proxies, DMZ designs, NAT, iptables, ACL and RBAC.',ht:'Firewalls ובקרת גישה',hd:'Stateless מול stateful, proxies, תכנון DMZ, NAT, iptables, ACL ו-RBAC.'},
-  {id:'10',file:'10-tools.html',t:'Tools lab',d:'What each tool does, what it puts on the wire, how to read its output, how they combine.',ht:'מעבדת כלים',hd:'מה כל כלי עושה, מה הוא שולח על הקו, איך קוראים את הפלט, ואיך הם מתחברים.'}
+  {id:'10',file:'10-tools.html',t:'Tools lab',d:'What each tool does, what it puts on the wire, how to read its output, how they combine.',ht:'מעבדת כלים',hd:'מה כל כלי עושה, מה הוא שולח על הקו, איך קוראים את הפלט, ואיך הם מתחברים.'},
+  {id:'11',file:'11-commands.html',t:'Command reference',d:'Every lab command by tool, and what each attack looks like in a capture.',ht:'מדריך פקודות',hd:'כל פקודות המעבדה לפי כלי, ואיך כל תקיפה נראית בלכידה.'},
+  {id:'t01',file:'t01-guide.html',t:'Teaching and exam guide',d:'How the courses connect, what to show in each lesson, misconceptions, a study plan.',ht:'מדריך הוראה ומבחן',hd:'איך הקורסים מתחברים, מה להראות בכל שיעור, תפיסות שגויות, תוכנית לימוד.'}
 ];
-const SUBJ = [
-  {t:'Foundations',d:'How packets travel and what security means',ht:'יסודות',hd:'איך packets עוברים ומה זו אבטחה',ch:['00','01']},
-  {t:'Reconnaissance',d:'Finding out what exists before touching it',ht:'סיור',hd:'לגלות מה קיים לפני שנוגעים',ch:['02','03']},
-  {t:'Attacks on the network',d:'Abusing LAN protocols and exhausting resources',ht:'תקיפות על הרשת',hd:'ניצול פרוטוקולי LAN ומיצוי משאבים',ch:['04','05']},
-  {t:'Cryptography',d:'Secret keys, public keys, and securing email',ht:'קריפטוגרפיה',hd:'מפתח סודי, מפתח ציבורי ואבטחת מייל',ch:['06','07','08']},
-  {t:'Defense and practice',d:'Firewalls, access control and the tools lab',ht:'הגנה ותרגול',hd:'Firewalls, בקרת גישה ומעבדת הכלים',ch:['09','10']}
+const COURSES = [
+  {key:'net',t:'Computer Networks',ht:'רשתות תקשורת',tag:'Course 1 · prerequisite',htag:'קורס 1 · קורס קדם',
+   d:'The foundation: how the Internet works layer by layer, from HTTP down to Ethernet frames, with every calculation the exam asks for.',
+   hd:'הבסיס: איך האינטרנט עובד שכבה אחרי שכבה, מ-HTTP ועד frames של Ethernet, עם כל החישובים שהמבחן שואל.',
+   subj:[
+    {t:'Foundations',d:'What the Internet is and how fast it moves bits',ht:'יסודות',hd:'מה זה האינטרנט וכמה מהר הוא מעביר ביטים',ch:['n01','n02']},
+    {t:'Application layer',d:'Web, mail, DNS, streaming and sockets',ht:'שכבת האפליקציה',hd:'Web, מייל, DNS, סטרימינג ו-sockets',ch:['n03','n04','n05']},
+    {t:'Transport layer',d:'Reliable delivery over an unreliable network',ht:'שכבת התעבורה',hd:'מסירה אמינה מעל רשת לא אמינה',ch:['n06','n07']},
+    {t:'Network layer',d:'Addressing, forwarding and routing',ht:'שכבת הרשת',hd:'מיעון, העברה וניתוב',ch:['n08','n09']},
+    {t:'Link layer and exam',d:'LANs, and everything on one page',ht:'שכבת הקו ומבחן',hd:'רשתות LAN, והכל בעמוד אחד',ch:['n10','n11']},
+    {t:'Hands-on',d:'See every concept on a real machine',ht:'מעשי',hd:'לראות כל מושג על מחשב אמיתי',ch:['n12']}]},
+  {key:'sec',t:'Network and Server Security',ht:'אבטחת רשתות ומשרתת',tag:'Course 2',htag:'קורס 2',
+   d:'How each of those protocols is attacked and defended, down to every packet and header field.',
+   hd:'איך כל אחד מהפרוטוקולים האלה מותקף ומוגן, עד רמת כל packet וכל שדה header.',
+   subj:[
+    {t:'Foundations',d:'How packets travel and what security means',ht:'יסודות',hd:'איך packets עוברים ומה זו אבטחה',ch:['00','01']},
+    {t:'Reconnaissance',d:'Finding out what exists before touching it',ht:'סיור',hd:'לגלות מה קיים לפני שנוגעים',ch:['02','03']},
+    {t:'Attacks on the network',d:'Abusing LAN protocols and exhausting resources',ht:'תקיפות על הרשת',hd:'ניצול פרוטוקולי LAN ומיצוי משאבים',ch:['04','05']},
+    {t:'Cryptography',d:'Secret keys, public keys, and securing email',ht:'קריפטוגרפיה',hd:'מפתח סודי, מפתח ציבורי ואבטחת מייל',ch:['06','07','08']},
+    {t:'Defense and practice',d:'Firewalls, access control, tools and commands',ht:'הגנה ותרגול',hd:'Firewalls, בקרת גישה, כלים ופקודות',ch:['09','10','11']}]},
+  {key:'aid',t:'Course aids',ht:'ערכת עזר',tag:'For both courses',htag:'לשני הקורסים',
+   d:'For lecturers and students: how the courses connect, lesson guides, misconceptions and an exam plan.',
+   hd:'למרצים ולסטודנטים: איך הקורסים מתחברים, מדריכי שיעורים, תפיסות שגויות ותוכנית למבחן.',
+   subj:[{t:'Teaching and exam',d:'Using the site in class and preparing for the exam',ht:'הוראה ומבחן',hd:'שימוש באתר בכיתה והכנה למבחן',ch:['t01']}]}
 ];
+const SUBJ = COURSES.flatMap(c => c.subj);
 const HE = window.LANG === 'he';
 const L = HE ? {
   intro:'מבוא', allAnim:'כל האנימציות', loading:'טוען…', loadingCh:'טוען את פרק ', loadErr:'לא ניתן לטעון את הפרק (', loadErr2:'). רעננו את הדף כדי לנסות שוב.',
@@ -307,15 +379,17 @@ const L = HE ? {
   vEyebrow:'כל האנימציות', vH1:'אנימציות של packets', vLead:'כל התרחישים מכל הפרקים. בחרו אחד למטה.', thCh:'פרק', thAn:'אנימציה',
   noMatch:'אין תוצאות. נסו מילה אחרת.', indexing:'עדיין מאנדקס את הפרקים…', resAnim:'▶ אנימציה · פרק ', resCh:'פרק ',
   search:'חיפוש נושאים, headers, כלים… (לחצו /)', searchLabel:'חיפוש בקורס', lang:'English', langLabel:'Switch to English', chapters:'פרקים',
-  chapterCard:'פרק ', subject:'נושא ', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה'
+  chapterCard:'פרק ', subject:'נושא ', practice:'תרגול ומבחנים', course:'קורס', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה'
 } : {
   intro:'Introduction', allAnim:'All animations', loading:'Loading…', loadingCh:'Loading chapter ', loadErr:'Could not load this chapter (', loadErr2:'). Refresh the page to try again.',
   animH:'▶ Animations', animP:'Press Play to watch, or step through with ⏮ ⏭. The right panel shows the real header fields at each step.',
   vEyebrow:'All animations', vH1:'Packet animations', vLead:'Every scenario from every chapter. Pick one below.', thCh:'Chapter', thAn:'Animation',
   noMatch:'No matches. Try another term.', indexing:'Still indexing chapters…', resAnim:'▶ ANIMATION · CH ', resCh:'CH ',
   search:'Search topics, headers, tools… (press /)', searchLabel:'Search the course', lang:'עברית', langLabel:'החלפה לעברית', chapters:'Chapters',
-  chapterCard:'CHAPTER ', subject:'SUBJECT ', anim1:'1 animation', animN:' animations', reading:'reading'
+  chapterCard:'CHAPTER ', subject:'SUBJECT ', practice:'Practice quiz', course:'Course', anim1:'1 animation', animN:' animations', reading:'reading'
 };
+const lab = id => id.toUpperCase();
+const courseOf = id => COURSES.find(k => k.subj.some(g => g.ch.includes(id)));
 const cT = c => HE ? c.ht : c.t, cD = c => HE ? c.hd : c.d, gT = g => HE ? g.ht : g.t, gD = g => HE ? g.hd : g.d;
 const aT = s => Anim.loc(s).title;
 const nAnim = k => k ? (k === 1 ? L.anim1 : k + L.animN) : L.reading;
@@ -325,7 +399,7 @@ const cache = {};
 let player = null;
 
 // ---------- rail ----------
-rail.innerHTML = '<a href="#home" data-ch="home"><span>⌂</span>' + L.intro + '</a>' + SUBJ.map(g => '<div class="grp">' + esc(gT(g)) + '</div>' + g.ch.map(id => { const c = getCh(id); return '<a href="#ch-' + c.id + '" data-ch="' + c.id + '"><span>' + c.id + '</span>' + esc(cT(c)) + '</a>'; }).join('')).join('') + '<hr><a href="#videos" data-ch="videos"><span>▶</span>' + L.allAnim + '</a>';
+rail.innerHTML = '<a href="#home" data-ch="home"><span>⌂</span>' + L.intro + '</a>' + COURSES.map(k => '<div class="crs">' + esc(HE ? k.ht : k.t) + '</div>' + k.subj.map(g => '<div class="grp">' + esc(gT(g)) + '</div>' + g.ch.map(id => { const c = getCh(id); return '<a href="#ch-' + c.id + '" data-ch="' + c.id + '"><span>' + lab(c.id) + '</span>' + esc(cT(c)) + '</a>'; }).join('')).join('')).join('') + '<hr><a href="#quiz" data-ch="quiz"><span>✓</span>' + L.practice + '</a><a href="#videos" data-ch="videos"><span>▶</span>' + L.allAnim + '</a>';
 rail.setAttribute('aria-label', L.chapters);
 const qInput = $('#q'); qInput.placeholder = L.search; qInput.setAttribute('aria-label', L.searchLabel);
 const langBtn = $('#langBtn'); langBtn.textContent = L.lang; langBtn.setAttribute('aria-label', L.langLabel); langBtn.lang = HE ? 'en' : 'he';
@@ -344,29 +418,35 @@ function setOn(key){ rail.querySelectorAll('a').forEach(a => a.classList.toggle(
 function stopPlayer(){ if (player) { player.destroy(); player = null; } }
 
 // ---------- views ----------
+function cardsFor(k){
+  return k.subj.map((g, i) => '<section class="subj"><div class="subj-h"><span class="num">' + L.subject + (i + 1) + '</span><h2>' + esc(gT(g)) + '</h2><p>' + esc(gD(g)) + '</p></div><div class="cards">' + g.ch.map(id => { const c = getCh(id), n = Anim.byChapter(c.id).length, q = window.Quiz ? Quiz.count(c.id) : 0; return '<a class="card" href="#ch-' + c.id + '"><span class="num">' + L.chapterCard + lab(c.id) + '</span><b>' + esc(cT(c)) + '</b><small>' + esc(cD(c)) + '</small><span class="meta">' + nAnim(n) + (q ? ' · ' + q + (HE ? ' שאלות' : ' questions') : '') + '</span></a>'; }).join('') + '</div></section>').join('');
+}
+function courseBlocks(){
+  return COURSES.map(k => '<div class="course" id="course-' + k.key + '"><div class="course-h"><span class="ctag">' + esc(HE ? k.htag : k.tag) + '</span><h2>' + esc(HE ? k.ht : k.t) + (HE ? '' : ' <span class="he" lang="he">' + esc(k.ht) + '</span>') + '</h2><p>' + esc(HE ? k.hd : k.d) + '</p></div>' + cardsFor(k) + '</div>').join('');
+}
 function homeEn(){
-  const n = Anim.scenarios.length;
+  const n = Anim.scenarios.length, q = window.Quiz ? Quiz.total() : 0;
   main.innerHTML = '<div class="wrap"><section class="intro" aria-label="Introduction"><div>'
    + '<div class="eyebrow">HIT · Holon Institute of Technology</div>'
-   + '<h1>Network and Server Security, packet by packet.</h1>'
-   + '<p class="lead">A study companion for the course <span class="he" lang="he">אבטחת רשתות ומשרתת</span> (Network and Server Security). It explains every topic down to where each packet goes, which headers it carries and why, and the exact steps of every protocol, attack and defense.</p>'
-   + '<div class="stats"><span>11 chapters</span><span>5 subjects</span><span>' + n + ' packet animations</span><span>search across everything</span></div></div>'
-   + '<aside class="author"><div class="eyebrow">Created by</div><div class="who">Eden Alon</div><p class="note" style="margin:.2rem 0 0">Computer Science, 3rd year</p><dl><dt>Course</dt><dd><span class="he" lang="he">אבטחת רשתות ומשרתת</span></dd><dt>Institute</dt><dd>HIT, Holon Institute of Technology</dd><dt>Purpose</dt><dd>A helping tool for studying the course</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd></dl></aside></section>'
-   + '<div class="how"><div><b>Start with 00</b><p class="note">Packet foundations explains each header field once; later chapters show how each field is used and abused.</p></div><div><b>Watch, then read</b><p class="note">Each chapter opens with its animations. Pause on any step to read the exact header values.</p></div><div><b>Search</b><p class="note">Press / and type any term: a header field, a port, an attack, a tool.</p></div></div>'
-   + SUBJ.map((g, i) => '<section class="subj"><div class="subj-h"><span class="num">SUBJECT ' + (i + 1) + '</span><h2>' + esc(gT(g)) + '</h2><p>' + esc(gD(g)) + '</p></div><div class="cards">' + g.ch.map(id => { const c = getCh(id), k = Anim.byChapter(c.id).length; return '<a class="card" href="#ch-' + c.id + '"><span class="num">CHAPTER ' + c.id + '</span><b>' + esc(c.t) + '</b><small>' + esc(c.d) + '</small><span class="meta">' + (k ? k + ' animation' + (k > 1 ? 's' : '') : 'reading') + '</span></a>'; }).join('') + '</div></section>').join('')
-   + '<p class="disclaimer">An independent study aid written by a student, not official course material and not affiliated with or endorsed by HIT or the course staff. The explanations are original summaries of the course topics; real-world notes marked as additions go beyond the slides. Tools are described for learning and for authorized lab use only.</p></div>';
+   + '<h1>Computer Networks and Network Security, packet by packet.</h1>'
+   + '<p class="lead">A study companion for two connected HIT courses: <span class="he" lang="he">רשתות תקשורת</span> (Computer Networks), the prerequisite, and <span class="he" lang="he">אבטחת רשתות ומשרתת</span> (Network and Server Security). Start with the networks course to build the foundation, then see how every protocol is attacked and defended, down to each packet and header field.</p>'
+   + '<div class="stats"><span>2 courses</span><span>' + CH.length + ' chapters</span><span>' + n + ' packet animations</span><span>' + q + ' practice questions</span><span>search across everything</span></div></div>'
+   + '<aside class="author"><div class="eyebrow">Created by</div><div class="who">Eden Alon</div><p class="note" style="margin:.2rem 0 0">Computer Science, 3rd year</p><dl><dt>Courses</dt><dd><span class="he" lang="he">רשתות תקשורת</span> · <span class="he" lang="he">אבטחת רשתות ומשרתת</span></dd><dt>Institute</dt><dd>HIT, Holon Institute of Technology</dd><dt>Purpose</dt><dd>A helping tool for studying both courses</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd></dl></aside></section>'
+   + '<div class="how"><div><b>Networks first</b><p class="note">Course 1 is the base the security course assumes. Chapter N02 and N11 hold every formula the exams use.</p></div><div><b>Watch, then read</b><p class="note">Each chapter opens with its animations. Pause on any step to read the exact header values.</p></div><div><b>Practice</b><p class="note">Every chapter ends with a quiz with explanations. The practice page mixes questions from a whole course.</p></div><div><b>Search</b><p class="note">Press / and type any term: a header field, a port, a formula, a tool.</p></div></div>'
+   + courseBlocks()
+   + '<p class="disclaimer">An independent study aid written by a student, not official course material and not affiliated with or endorsed by HIT or the course staff. The explanations are original summaries of the course topics; notes marked as additions go beyond the slides. Tools are described for learning and for authorized lab use only.</p></div>';
 }
 function homeHe(){
-  const n = Anim.scenarios.length;
+  const n = Anim.scenarios.length, q = window.Quiz ? Quiz.total() : 0;
   main.innerHTML = '<div class="wrap"><section class="intro" aria-label="מבוא"><div>'
    + '<div class="eyebrow">HIT · מכון טכנולוגי חולון</div>'
-   + '<h1>אבטחת רשתות ומשרתת, packet אחרי packet.</h1>'
-   + '<p class="lead">כלי עזר ללימוד הקורס <b>אבטחת רשתות ומשרתת</b> (Network and Server Security). הוא מסביר כל נושא עד הרמה של לאן כל packet הולך, אילו headers הוא נושא ולמה, ומה השלבים המדויקים של כל פרוטוקול, תקיפה והגנה. מונחים טכניים ושמות שדות נשארים באנגלית, כמו במבחן ובכלים.</p>'
-   + '<div class="stats"><span>11 פרקים</span><span>5 נושאים</span><span>' + n + ' אנימציות של packets</span><span>חיפוש בכל התוכן</span></div></div>'
-   + '<aside class="author"><div class="eyebrow">נוצר ע"י</div><div class="who">עדן אלון</div><p class="note" style="margin:.2rem 0 0">מדעי המחשב, שנה ג׳</p><dl><dt>קורס</dt><dd>אבטחת רשתות ומשרתת</dd><dt>מוסד</dt><dd>HIT, מכון טכנולוגי חולון</dd><dt>מטרה</dt><dd>כלי עזר ללימוד הקורס</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd></dl></aside></section>'
-   + '<div class="how"><div><b>להתחיל מ-00</b><p class="note">יסודות ה-packet מסביר כל שדה header פעם אחת; הפרקים הבאים מראים איך כל שדה משמש ומנוצל.</p></div><div><b>לצפות, ואז לקרוא</b><p class="note">כל פרק נפתח באנימציות שלו. עצרו בכל צעד כדי לקרוא את ערכי ה-header המדויקים.</p></div><div><b>לחפש</b><p class="note">לחצו / והקלידו כל מונח: שדה header, פורט, תקיפה, כלי. החיפוש עובד גם בעברית.</p></div></div>'
-   + SUBJ.map((g, i) => '<section class="subj"><div class="subj-h"><span class="num">' + L.subject + (i + 1) + '</span><h2>' + esc(gT(g)) + '</h2><p>' + esc(gD(g)) + '</p></div><div class="cards">' + g.ch.map(id => { const c = getCh(id), k = Anim.byChapter(c.id).length; return '<a class="card" href="#ch-' + c.id + '"><span class="num">' + L.chapterCard + c.id + '</span><b>' + esc(cT(c)) + '</b><small>' + esc(cD(c)) + '</small><span class="meta">' + nAnim(k) + '</span></a>'; }).join('') + '</div></section>').join('')
-   + '<p class="disclaimer">כלי עזר עצמאי שנכתב ע"י סטודנט. זה לא חומר רשמי של הקורס, ואין לו קשר ל-HIT או לצוות הקורס ולא קיבל את אישורם. ההסברים הם סיכומים מקוריים של נושאי הקורס; הערות "עולם אמיתי" ו"תוספות" חורגות מהשקפים. הכלים מתוארים ללמידה ולשימוש במעבדה מורשית בלבד.</p></div>';
+   + '<h1>רשתות תקשורת ואבטחת רשתות, packet אחרי packet.</h1>'
+   + '<p class="lead">כלי עזר ללימוד שני קורסים מחוברים ב-HIT: <b>רשתות תקשורת</b>, קורס הקדם, ו-<b>אבטחת רשתות ומשרתת</b>. מתחילים בקורס הרשתות כדי לבנות את הבסיס, ואז רואים איך כל פרוטוקול מותקף ומוגן, עד רמת כל packet וכל שדה header. מונחים טכניים ושמות שדות נשארים באנגלית.</p>'
+   + '<div class="stats"><span>2 קורסים</span><span>' + CH.length + ' פרקים</span><span>' + n + ' אנימציות של packets</span><span>' + q + ' שאלות תרגול</span><span>חיפוש בכל התוכן</span></div></div>'
+   + '<aside class="author"><div class="eyebrow">נוצר ע"י</div><div class="who">עדן אלון</div><p class="note" style="margin:.2rem 0 0">מדעי המחשב, שנה ג׳</p><dl><dt>קורסים</dt><dd>רשתות תקשורת · אבטחת רשתות ומשרתת</dd><dt>מוסד</dt><dd>HIT, מכון טכנולוגי חולון</dd><dt>מטרה</dt><dd>כלי עזר ללימוד שני הקורסים</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd></dl></aside></section>'
+   + '<div class="how"><div><b>קודם רשתות</b><p class="note">קורס 1 הוא הבסיס שקורס האבטחה מניח. בפרקים N02 ו-N11 נמצאות כל הנוסחאות שהמבחנים משתמשים בהן.</p></div><div><b>לצפות, ואז לקרוא</b><p class="note">כל פרק נפתח באנימציות שלו. עצרו בכל צעד כדי לקרוא את ערכי ה-header המדויקים.</p></div><div><b>לתרגל</b><p class="note">כל פרק נגמר בבוחן עם הסברים. דף התרגול מערבב שאלות מקורס שלם.</p></div><div><b>לחפש</b><p class="note">לחצו / והקלידו כל מונח: שדה header, פורט, נוסחה, כלי. החיפוש עובד גם בעברית.</p></div></div>'
+   + courseBlocks()
+   + '<p class="disclaimer">כלי עזר עצמאי שנכתב ע"י סטודנט. זה לא חומר רשמי של הקורס, ואין לו קשר ל-HIT או לצוות הקורס ולא קיבל את אישורם. ההסברים הם סיכומים מקוריים של נושאי הקורס; הערות שמסומנות כתוספות חורגות מהשקפים. הכלים מתוארים ללמידה ולשימוש במעבדה מורשית בלבד.</p></div>';
 }
 function home(){ stopPlayer(); setOn('home'); HE ? homeHe() : homeEn(); window.scrollTo(0, 0); }
 function vidStrip(list, startId){
@@ -387,7 +467,9 @@ async function chapter(id, sec){
   const w = document.createElement('div'); w.className = 'wrap'; w.innerHTML = html;
   main.innerHTML = ''; main.appendChild(w);
   const list = Anim.byChapter(id);
-  if (list.length) { const top = $('header.top', w); const strip = vidStrip(list); top ? top.after(strip) : w.prepend(strip); }
+  if (list.length) { const top = $('.prereq', w) || $('header.top', w); const strip = vidStrip(list); top ? top.after(strip) : w.prepend(strip); }
+  if (window.Quiz && !w.querySelector('.quiz-mount') && Quiz.count(id)) { const qm = document.createElement('div'); qm.className = 'quiz-mount'; qm.dataset.quiz = id; const ls = w.querySelectorAll('section'); (ls.length ? ls[ls.length - 1] : w).appendChild(qm); }
+  if (window.Quiz) w.querySelectorAll('.quiz-mount').forEach(m => Quiz.mount(m, m.dataset.quiz));
   w.querySelectorAll('script').forEach(old => { const s = document.createElement('script'); s.textContent = old.textContent; old.replaceWith(s); });
   if (sec) { const t = w.querySelector('#' + CSS.escape(sec)); if (t) { t.scrollIntoView(); return; } }
   window.scrollTo(0, 0);
@@ -399,16 +481,24 @@ function videos(start){
   main.innerHTML = ''; main.appendChild(w);
   w.appendChild(vidStrip(Anim.scenarios, start));
   const idx = document.createElement('div'); idx.className = 'tbl';
-  idx.innerHTML = '<table><thead><tr><th>' + L.thCh + '</th><th>' + L.thAn + '</th></tr></thead><tbody>' + Anim.scenarios.map(s => '<tr><td class="num">' + s.ch + ' · ' + esc(cT(getCh(s.ch))) + '</td><td><a href="#v-' + s.id + '">' + esc(aT(s)) + '</a></td></tr>').join('') + '</tbody></table>';
+  idx.innerHTML = '<table><thead><tr><th>' + L.thCh + '</th><th>' + L.thAn + '</th></tr></thead><tbody>' + Anim.scenarios.map(s => '<tr><td class="num">' + lab(s.ch) + ' · ' + esc(cT(getCh(s.ch))) + '</td><td><a href="#v-' + s.id + '">' + esc(aT(s)) + '</a></td></tr>').join('') + '</tbody></table>';
   w.appendChild(idx);
+  window.scrollTo(0, 0);
+}
+function quizPage(sel){
+  stopPlayer(); setOn('quiz');
+  const w = document.createElement('div'); w.className = 'wrap';
+  main.innerHTML = ''; main.appendChild(w);
+  if (window.Quiz) Quiz.page(w, sel, COURSES, getCh, lab, cT); else w.innerHTML = '<p class="loading">' + L.loading + '</p>';
   window.scrollTo(0, 0);
 }
 function route(){
   const h = location.hash.slice(1);
   if (!h || h === 'home') return home();
   if (h === 'videos') return videos();
+  if (h === 'quiz' || h.startsWith('quiz-')) return quizPage(h.slice(5));
   if (h.startsWith('v-')) return videos(h.slice(2));
-  const m = h.match(/^ch-(\d\d)(?:--(.+))?$/);
+  const m = h.match(/^ch-([nt]?\d\d)(?:--(.+))?$/);
   if (m) return chapter(m[1], m[2]);
   home();
 }
@@ -417,7 +507,7 @@ window.addEventListener('hashchange', route);
 main.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]'); if (!a) return;
   const h = a.getAttribute('href').slice(1);
-  if (/^(ch-|v-|home$|videos$)/.test(h)) return;
+  if (/^(ch-|v-|quiz|home$|videos$)/.test(h)) return;
   const t = main.querySelector('#' + CSS.escape(h)); if (t) { e.preventDefault(); t.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); }
 });
 route();
@@ -470,7 +560,7 @@ function showRes(){
   if (!q) { res.hidden = true; return; }
   cur = search(q, 12);
   if (!cur.length) { res.innerHTML = '<div class="res-empty">' + (idxReady ? L.noMatch : L.indexing) + '</div>'; res.hidden = false; return; }
-  res.innerHTML = cur.map((it, k) => '<button class="res" type="button" data-k="' + k + '"><span class="k">' + (it.kind === 'vid' ? L.resAnim : L.resCh) + it.ch + ' · ' + esc(cT(getCh(it.ch))) + '</span><b>' + esc(it.title) + '</b><small>' + snippet(it, q) + '</small></button>').join('');
+  res.innerHTML = cur.map((it, k) => '<button class="res" type="button" data-k="' + k + '"><span class="k">' + (it.kind === 'vid' ? L.resAnim : L.resCh) + lab(it.ch) + ' · ' + esc(cT(getCh(it.ch))) + '</span><b>' + esc(it.title) + '</b><small>' + snippet(it, q) + '</small></button>').join('');
   res.hidden = false;
 }
 function openRes(k){ const it = cur[k]; if (!it) return; res.hidden = true; qEl.blur(); const h = hrefOf(it); if (location.hash === h) route(); else location.hash = h; }
@@ -491,7 +581,7 @@ document.addEventListener('keydown', e => { if (e.key === '/' && !/INPUT|TEXTARE
 // ---------- ask Claude ----------
 const ask = $('#ask'), log = $('#askLog'), form = $('#askForm'), inp = $('#askIn'), send = $('#askSend');
 let sample = null, sampleChecked = false, turns = [], ctl = null, busy = false;
-const SUGS = ['How does a router fragment a packet and how does the receiver reassemble it?', 'Walk me through an idle scan packet by packet, with the IP ID values.', 'Which header fields does ARP poisoning forge, and how does Dynamic ARP Inspection stop it?', 'What is the difference between a stateless and a stateful firewall for a SYN flood?'];
+const SUGS = ['Walk me through the delay formula for a 3-hop path with store-and-forward.', 'How does Go-Back-N recover from one lost packet?', 'How does a router fragment a packet and how does the receiver reassemble it?', 'Walk me through an idle scan packet by packet, with the IP ID values.', 'Which header fields does ARP poisoning forge, and how does Dynamic ARP Inspection stop it?', 'What is the difference between a stateless and a stateful firewall for a SYN flood?'];
 function intro(){
   log.innerHTML = '';
   const m = document.createElement('div'); m.className = 'msg c';
@@ -528,7 +618,7 @@ function md(t){
   close();
   return out.replace(/<p>\u0000(\d+)\u0000<\/p>|\u0000(\d+)\u0000/g, (_, a, b) => '<pre>' + esc(blocks[+(a || b)]) + '</pre>');
 }
-function currentChapter(){ const m = location.hash.match(/^#ch-(\d\d)/); return m ? m[1] : null; }
+function currentChapter(){ const m = location.hash.match(/^#ch-([nt]?\d\d)/); return m ? m[1] : null; }
 function contextFor(q){
   let hits = search(q, 8).filter(h => h.kind === 'sec');
   const here = currentChapter();
@@ -537,7 +627,7 @@ function contextFor(q){
   const vids = search(q, 6).filter(h => h.kind === 'vid').slice(0, 2);
   return { hits, vids };
 }
-const RULES = 'You are a tutor for a university course "Network and Server Security" (HIT, Israel). The lecturer requires packet-level understanding: where each packet goes, which headers and fields it carries and why, and the exact steps of each protocol, attack and defense.\n'
+const RULES = 'You are a tutor for two connected university courses at HIT, Israel: "Computer Networks" (the prerequisite: layers, delays, HTTP, DNS, TCP, IP, routing, link layer) and "Network and Server Security". The lecturer requires packet-level understanding: where each packet goes, which headers and fields it carries and why, and the exact steps of each protocol, attack and defense.\n'
  + 'Answer in clear English (if the student writes Hebrew, answer in Hebrew and keep technical terms in English). Use the COURSE NOTES provided with each question as the primary source; if you add knowledge beyond them, say so briefly. Prefer numbered steps and concrete header field values. For attack topics, explain mechanics and defenses at the level of a university course and a lab environment. Keep answers focused (usually under 350 words). Use simple Markdown: **bold**, `code`, lists, and ``` blocks for headers or commands.';
 async function ask_(q){
   if (busy || !q.trim()) return;
@@ -547,7 +637,7 @@ async function ask_(q){
   log.scrollTop = log.scrollHeight;
   if (!idxReady) await idxP;
   const { hits, vids } = contextFor(q);
-  const notes = hits.map(h => '[Chapter ' + h.ch + ' – ' + getCh(h.ch).t + ' › ' + h.title + ']\n' + h.text.slice(0, 3200)).join('\n\n')
+  const notes = hits.map(h => '[Chapter ' + lab(h.ch) + ' – ' + getCh(h.ch).t + ' › ' + h.title + ']\n' + h.text.slice(0, 3200)).join('\n\n')
     + (vids.length ? '\n\n' + vids.map(v => '[Animation: ' + v.title + ']\n' + v.text.slice(0, 1500)).join('\n\n') : '');
   const userTurn = 'COURSE NOTES (most relevant sections):\n' + (notes || '(no matching section)') + '\n\nQUESTION: ' + q;
   const msgs = [{ role: 'user', content: RULES + (HE ? '\nAnswer in Hebrew. Keep technical terms, protocol names and header field names in English.\n' : '') }].concat(turns.slice(-6)).concat([{ role: 'user', content: userTurn }]);
@@ -556,7 +646,7 @@ async function ask_(q){
     const r = await sample(msgs, { cache: false, signal: ctl.signal, onText: ({ text }) => { a.innerHTML = md(text); log.scrollTop = log.scrollHeight; } });
     a.innerHTML = md(r.text) + (r.truncated ? '<p class="note">(Answer was cut short. Ask a narrower question for the rest.)</p>' : '');
     turns.push({ role: 'user', content: q }, { role: 'assistant', content: r.text });
-    const links = hits.slice(0, 4).map(h => '<a href="#ch-' + h.ch + '--' + esc(h.id) + '">' + h.ch + ' · ' + esc(h.title) + '</a>').concat(vids.map(v => '<a href="#v-' + v.id + '">▶ ' + esc(v.title) + '</a>'));
+    const links = hits.slice(0, 4).map(h => '<a href="#ch-' + h.ch + '--' + esc(h.id) + '">' + lab(h.ch) + ' · ' + esc(h.title) + '</a>').concat(vids.map(v => '<a href="#v-' + v.id + '">▶ ' + esc(v.title) + '</a>'));
     if (links.length) { const d = document.createElement('div'); d.className = 'srcs'; d.innerHTML = links.join(''); a.appendChild(d); }
   } catch (e) {
     const code = e && e.code;

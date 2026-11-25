@@ -1,0 +1,139 @@
+<header class="top"><div class="eyebrow">רשתות תקשורת · פרק N04</div><h1>דואר אלקטרוני ו-DNS</h1><p class="lead">הרצאה 4 מכסה שני פרוטוקולי אפליקציה שכל השאר תלוי בהם. דואר אלקטרוני מראה פרוטוקול push ‏(SMTP) לצד פרוטוקולי pull ‏(IMAP, ‏POP3) ושיחת פקודה/תשובה מבוססת טקסט. DNS מראה איך מסד נתונים מבוזר והיררכי עונה על מיליארדי חיפושי שמות ביום, רובם מתוך מטמונים.</p><nav class="toc" aria-label="סעיפים"><a href="#mail">רכיבי מייל</a><a href="#smtp">SMTP</a><a href="#dialog">שיחת SMTP</a><a href="#format">מבנה ההודעה</a><a href="#access">IMAP ו-POP3</a><a href="#dns">שירותי DNS</a><a href="#hier">היררכיה</a><a href="#resolve">איטרטיבי מול רקורסיבי</a><a href="#rr">רשומות</a><a href="#dnsmsg">הודעות DNS</a><a href="#register">רישום דומיין</a><a href="#dnssec">אבטחת DNS</a><a href="#review">חזרה</a></nav></header>
+<section id="mail">
+<h2><span class="n">1</span>דואר אלקטרוני: שלושה רכיבים עיקריים</h2>
+<div class="tbl"><table><thead><tr><th>רכיב</th><th>תפקיד</th></tr></thead><tbody><tr><td><b>User agent</b> (קורא מייל)</td><td>כתיבה, עריכה וקריאה של הודעות: Outlook, ‏Apple Mail, ‏Thunderbird, דף webmail. הודעות יוצאות ונכנסות נשמרות בשרת.</td></tr><tr><td><b>שרתי מייל</b></td><td><b>תיבת דואר (mailbox)</b> שומרת הודעות נכנסות לכל משתמש; <b>תור הודעות (message queue)</b> שומר הודעות יוצאות שמחכות להישלח.</td></tr><tr><td><b>SMTP</b></td><td>Simple Mail Transfer Protocol ‏(RFC 5321): מעביר הודעות בין שרתי מייל. השרת השולח מתפקד כ<i>לקוח</i> SMTP, והשרת המקבל כ<i>שרת</i> SMTP.</td></tr></tbody></table></div>
+<div class="steps"><span class="tag">אליס שולחת הודעה לבוב</span><ol><li>אליס כותבת הודעה ל-<code>bob@someschool.edu</code> ב-user agent שלה.</li><li>ה-UA שלה שולח אותה לשרת המייל <b>שלה</b> ‏(submission, ‏SMTP בפורט 587); ההודעה נכנסת לתור ההודעות.</li><li>השרת של אליס, כלקוח SMTP, מחפש ב-DNS את רשומת ה-MX של someschool.edu ופותח חיבור TCP לשרת של בוב ב<b>פורט 25</b>.</li><li>הוא שולח את ההודעה על החיבור בשיחת SMTP.</li><li>השרת של בוב שם את ההודעה בתיבה של בוב.</li><li>ה-UA של בוב קורא אותה בפרוטוקול <b>pull</b>: ‏IMAP או HTTP ‏(webmail).</li></ol></div>
+<div class="def"><span class="tag">לזכור</span><p>אין חיבור ישיר בין המחשב של אליס למחשב של בוב, ובדרך כלל גם אין שרתי מייל בדרך: השרת של אליס מדבר ישירות עם השרת של בוב. אם השרת של בוב לא זמין, ההודעה נשארת בתור של השרת של אליס ונשלחת שוב (בדרך כלל כל 30 דקות במשך כמה ימים).</p></div>
+</section>
+<section id="smtp">
+<h2><span class="n">2</span>תכונות SMTP</h2>
+<div class="col"><ul><li>משתמש ב-<b>TCP</b> להעברה אמינה של הודעות, פורט שרת <b>25</b>.</li><li>שלושה שלבים בהעברה: <b>handshaking</b> (ברכה), <b>העברת הודעות</b>, <b>סגירה</b>.</li><li>אינטראקציה של פקודה/תשובה, כמו ב-HTTP: הפקודות הן טקסט ASCII, והתשובות הן קוד סטטוס ומשפט.</li><li>הודעות (header וגוף) חייבות להיות ב-<b>ASCII של 7 ביט</b>. קבצים מצורפים בינאריים מקודדים ל-ASCII בעזרת MIME ‏(base64).</li><li><b>חיבורים persistent</b>: כמה הודעות לאותו שרת עוברות על חיבור TCP אחד.</li><li>סוף הודעה מסומן ב-<code>CRLF.CRLF</code> (שורה עם נקודה בודדת).</li></ul></div>
+<div class="tbl"><table><thead><tr><th></th><th>HTTP</th><th>SMTP</th></tr></thead><tbody><tr><td>כיוון</td><td><b>Pull</b>: הלקוח מושך אובייקטים מהשרת</td><td><b>Push</b>: הלקוח דוחף את ההודעה לשרת</td></tr><tr><td>אובייקטים בהודעה</td><td>כל אובייקט בהודעת תשובה משלו</td><td>כמה אובייקטים נשלחים בהודעה אחת מרובת חלקים (multipart)</td></tr><tr><td>קידוד</td><td>כל בית שהוא בגוף</td><td>רק ASCII של 7 ביט</td></tr><tr><td>מכנה משותף</td><td>פקודה/תשובה ב-ASCII, קודי סטטוס</td><td>פקודה/תשובה ב-ASCII, קודי סטטוס</td></tr></tbody></table></div>
+</section>
+<section id="dialog">
+<h2><span class="n">3</span>שיחת SMTP מלאה</h2>
+<div class="col"><p>S = שרת (crepes.fr שמקבל), C = לקוח (hamburger.edu ששולח). לפני זה, handshake של TCP לפורט 25 לקח RTT אחד.</p></div>
+<pre class="code" dir="ltr">S: 220 hamburger.edu                         ← greeting
+C: HELO crepes.fr                             ← handshake (EHLO for extended SMTP)
+S: 250 Hello crepes.fr, pleased to meet you
+C: MAIL FROM: &lt;alice@crepes.fr&gt;              ← envelope sender
+S: 250 alice@crepes.fr... Sender ok
+C: RCPT TO: &lt;bob@hamburger.edu&gt;              ← envelope recipient (repeat for each)
+S: 250 bob@hamburger.edu ... Recipient ok
+C: DATA
+S: 354 Enter mail, end with "." on a line by itself
+C: Do you like ketchup?
+C: How about pickles?
+C: .                                           ← end of message (CRLF.CRLF)
+S: 250 Message accepted for delivery
+C: QUIT
+S: 221 hamburger.edu closing connection</pre>
+<div class="col"><p>אפשר לנסות במעבדה: <code>telnet &lt;servername&gt; 25</code> ולהקליד את הפקודות. (שרתים אמיתיים דורשים היום STARTTLS ואימות לשליחה, ומסנני ספאם דוחים את רוב המיילים שמוקלדים ידנית.)</p></div>
+<div class="atk"><span class="tag">מלכודת מבחן</span><p>ה-<b>envelope</b> ‏(MAIL FROM / RCPT TO) הוא מה שהשרתים מנתבים לפיו; השורות <code>From:</code> / <code>To:</code> בתוך DATA הן רק טקסט שהמשתמש רואה. שום דבר ב-SMTP הבסיסי לא בודק שהם תואמים, ובגלל זה זיוף עובד ובגלל זה קיימים SPF, ‏DKIM ו-DMARC (<a href="#ch-08--spoof">פרק 08 בקורס האבטחה</a>).</p></div>
+</section>
+<section id="format">
+<h2><span class="n">4</span>מבנה הודעת מייל (RFC 5322) ו-MIME</h2>
+<div class="col"><p>RFC 5321 ‏(SMTP) מגדיר איך <b>להעביר</b> הודעה; RFC 5322 מגדיר את ההודעה <b>עצמה</b>: שורות header, שורה ריקה, ואז הגוף (רק ASCII).</p></div>
+<pre class="code" dir="ltr">From: alice@crepes.fr
+To: bob@hamburger.edu
+Subject: Searching for the meaning of life.
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="XYZ"
+
+--XYZ
+Content-Type: text/plain; charset=UTF-8
+
+Hi Bob, see the picture.
+--XYZ
+Content-Type: image/jpeg
+Content-Transfer-Encoding: base64
+
+/9j/4AAQSkZJRgABAQEASABIAAD...
+--XYZ--</pre>
+<div class="col"><p><b>MIME</b> ‏(Multipurpose Internet Mail Extensions) מוסיף headers שמצהירים על סוג התוכן ועל הקידוד, כדי שמידע בינארי (תמונות, PDF) וטקסט שאינו באנגלית יוכלו לעבור בתוך הודעת ASCII של 7 ביט. ‏Base64 הופך כל 3 בתים ל-4 תווי ASCII (גדול ב-33%).</p></div>
+</section>
+<section id="access">
+<h2><span class="n">5</span>פרוטוקולי גישה לדואר: IMAP, ‏POP3, ‏HTTP</h2>
+<div class="col"><p>SMTP הוא פרוטוקול push, ולכן המקבל לא יכול להשתמש בו כדי למשוך דואר מהשרת שלו. בשלב האחרון צריך פרוטוקול pull.</p></div>
+<div class="tbl"><table><thead><tr><th>פרוטוקול</th><th>פורט</th><th>התנהגות</th></tr></thead><tbody><tr><td>IMAP</td><td>143 (993 TLS)</td><td>ההודעות נשארות בשרת. תומך בתיקיות, אחזור, מחיקה, סימונים. שומר מצב בין sessions, כך שכל המכשירים רואים את אותה תיבה.</td></tr><tr><td>POP3</td><td>110 (995 TLS)</td><td>שלב הרשאה (user, ‏pass), ואז שלב טרנזקציות (list, ‏retr, ‏dele, ‏quit). מצב "הורד ומחק" מוחק את הדואר מהשרת, כך שמכשיר שני לא רואה כלום; "הורד והשאר" משאיר עותקים. חסר מצב בין sessions.</td></tr><tr><td>HTTP(S)</td><td>443</td><td>Webmail ‏(Gmail, ‏Outlook.com): הדפדפן מדבר HTTPS עם שרת ה-web, שמשתמש ב-IMAP/SMTP מאחורי הקלעים.</td></tr></tbody></table></div>
+</section>
+<section id="dns">
+<h2><span class="n">6</span>DNS: מה הוא מספק ולמה הוא מבוזר</h2>
+<div class="col"><p>אנשים משתמשים בשמות (<code>www.yahoo.com</code>); נתבים משתמשים בכתובות IP של 32 ביט. ה-<b>Domain Name System</b> ממפה ביניהם. הוא מסד נתונים מבוזר שממומש בהיררכיה של הרבה שרתי שמות, וגם פרוטוקול שכבת אפליקציה שבו מחשבים ושרתים שואלים אותו. הוא רץ מעל <b>UDP פורט 53</b> ‏(TCP 53 לתשובות גדולות ול-zone transfers).</p></div>
+<div class="tbl"><table><thead><tr><th>שירות</th><th>משמעות</th></tr></thead><tbody><tr><td>תרגום שם ל-IP</td><td>התפקיד העיקרי (רשומות A / AAAA)</td></tr><tr><td>כינויים למחשבים</td><td>שם קנוני עם כינויים נוחים יותר (CNAME)</td></tr><tr><td>כינויים לשרתי מייל</td><td><code>@company.com</code> ← שרת המייל בפועל (MX)</td></tr><tr><td>פיזור עומס</td><td>הרבה כתובות IP לשם אחד; DNS מסובב את הסדר (שרתי web משוכפלים, CDN)</td></tr></tbody></table></div>
+<div class="why"><span class="tag">למה</span><p>למה לא שרת DNS מרכזי אחד? הוא היה נקודת כשל יחידה, היה צריך לשאת את כל נפח השאילתות בעולם (Akamai לבדה רואה טריליוני שאילתות ביום), היה רחוק מרוב המשתמשים, ולא היה אפשר לתחזק אותו. "זה לא סקלבילי".</p></div>
+</section>
+<section id="hier">
+<h2><span class="n">7</span>ההיררכיה של DNS</h2>
+<pre class="code" dir="ltr">                        Root DNS servers  (".")
+          ┌──────────────────┼────────────────────┐
+     .com servers        .org servers          .edu servers        ← TLD
+    ┌──────┴──────┐           │              ┌──────┴──────┐
+ yahoo.com    amazon.com    pbs.org      nyu.edu      umass.edu    ← authoritative</pre>
+<div class="tbl"><table><thead><tr><th>רמה</th><th>מי מפעיל</th><th>מה הוא יודע</th></tr></thead><tbody><tr><td><b>Root</b></td><td>13 "שרתי" root לוגיים (a.root-servers.net עד m.), כל אחד משוכפל מאות פעמים עם anycast; ‏ICANN מנהל את אזור ה-root</td><td>איפה שרתי ה-TLD</td></tr><tr><td><b>TLD</b> ‏(top-level domain)</td><td>.com/.net: ‏Verisign; ‏.edu: ‏Educause; סיומות מדינה (.il, ‏.uk, ‏.fr)</td><td>איפה השרתים המוסמכים של כל דומיין</td></tr><tr><td><b>Authoritative (מוסמך)</b></td><td>הארגון עצמו או הספק שלו</td><td>הרשומות עצמן של המחשבים בארגון</td></tr><tr><td><b>שרת DNS מקומי</b> (resolver)</td><td>ה-ISP, החברה, או ציבורי (8.8.8.8, ‏1.1.1.1). לא חלק מההיררכיה במובן הצר</td><td>כלום בעצמו: הוא שואל בשמכם ושומר תשובות במטמון</td></tr></tbody></table></div>
+<figure><svg viewBox="0 0 720 265" width="720" role="img" aria-label="ההיררכיה של DNS" dir="ltr" style="direction:ltr"><g font-size="13"><rect x="310" y="15" width="100" height="38" rx="8" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="1.5"/><text x="360" y="38.5" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">Root</text><rect x="90" y="95" width="100" height="36" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="140" y="113" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">.com</text><text x="140" y="128" font-size="11" text-anchor="middle" fill="var(--muted)">TLD</text><line x1="360" y1="53" x2="140" y2="95" stroke="var(--line)" stroke-width="1.6"/><rect x="310" y="95" width="100" height="36" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="360" y="113" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">.org</text><text x="360" y="128" font-size="11" text-anchor="middle" fill="var(--muted)">TLD</text><line x1="360" y1="53" x2="360" y2="95" stroke="var(--line)" stroke-width="1.6"/><rect x="530" y="95" width="100" height="36" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="580" y="113" font-size="13" text-anchor="middle" font-weight="700" fill="var(--ink)">.edu</text><text x="580" y="128" font-size="11" text-anchor="middle" fill="var(--muted)">TLD</text><line x1="360" y1="53" x2="580" y2="95" stroke="var(--line)" stroke-width="1.6"/><rect x="10" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="65" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">yahoo.com</text><text x="65" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="140" y1="131" x2="65" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="140" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="195" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">amazon.com</text><text x="195" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="140" y1="131" x2="195" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="275" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="330" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">pbs.org</text><text x="330" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="360" y1="131" x2="330" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="450" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="505" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">nyu.edu</text><text x="505" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="580" y1="131" x2="505" y2="180" stroke="var(--line)" stroke-width="1.6"/><rect x="585" y="180" width="110" height="36" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="640" y="198" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">umass.edu</text><text x="640" y="213" font-size="11" text-anchor="middle" fill="var(--muted)">authoritative</text><line x1="580" y1="131" x2="640" y2="180" stroke="var(--line)" stroke-width="1.6"/><text x="360" y="250" font-size="11.5" text-anchor="middle" fill="var(--muted)">Root: ‏13 שרתים לוגיים (anycast), מכירים את ה-TLDs · ‏TLD: מכירים את ה-authoritative · ‏Authoritative: מחזיקים את הרשומות</text></g></svg><figcaption>כדי למצוא את www.amazon.com, ה-resolver שואל שרת root על שרתי ‎.com, שרת ‎.com על שרת ה-authoritative של amazon.com, ואת השרת הזה על רשומת ה-A.</figcaption></figure>
+
+</section>
+<section id="resolve">
+<h2><span class="n">8</span>פענוח איטרטיבי מול רקורסיבי</h2>
+<div class="col"><p>המחשב <code>cis.poly.edu</code> רוצה את ה-IP של <code>gaia.cs.umass.edu</code>. הוא תמיד שואל את <b>שרת ה-DNS המקומי</b> שלו (השאילתה הראשונה רקורסיבית: "תביא לי את התשובה").</p></div>
+<figure><svg viewBox="0 0 720 300" width="720" role="img" aria-label="תהליך DNS איטרטיבי" dir="ltr" style="direction:ltr"><g font-size="13"><rect x="20" y="170" width="120" height="44" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/><text x="80" y="192" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">Host</text><text x="80" y="207" font-size="11" text-anchor="middle" fill="var(--muted)">cis.poly.edu</text><rect x="230" y="170" width="130" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/><text x="295" y="192" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">Local DNS</text><text x="295" y="207" font-size="11" text-anchor="middle" fill="var(--muted)">dns.poly.edu</text><rect x="450" y="20" width="120" height="40" rx="8" fill="var(--atk-soft)" stroke="var(--atk)" stroke-width="1.5"/><text x="510" y="44.5" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">Root</text><rect x="560" y="110" width="120" height="40" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.5"/><text x="620" y="134.5" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">TLD .edu</text><rect x="450" y="210" width="140" height="40" rx="8" fill="var(--def-soft)" stroke="var(--def)" stroke-width="1.5"/><text x="520" y="230" font-size="11" text-anchor="middle" font-weight="700" fill="var(--ink)">Authoritative</text><text x="520" y="245" font-size="11" text-anchor="middle" fill="var(--muted)">dns.cs.umass.edu</text><line x1="140" y1="186" x2="228" y2="186" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="184" y="178" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">1</text><line x1="228" y1="200" x2="142" y2="200" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="184" y="216" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">8</text><line x1="330" y1="168" x2="452" y2="50" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="380" y="100" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">2</text><line x1="458" y1="60" x2="346" y2="170" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="410" y="132" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">3</text><line x1="362" y1="178" x2="558" y2="132" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="470" y="148" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">4</text><line x1="560" y1="142" x2="364" y2="190" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="470" y="176" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">5</text><line x1="362" y1="204" x2="448" y2="228" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ar)"/><text x="400" y="230" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">6</text><line x1="448" y1="240" x2="360" y2="214" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="410" y="250" font-size="12" text-anchor="middle" font-weight="700" fill="var(--ink)">7</text><text x="360" y="285" font-size="11.5" text-anchor="middle" fill="var(--muted)">איטרטיבי: ‏2, ‏4, ‏6 שאילתות; ‏3 ו-5 עונים "תשאל את השרת הזה"; ‏7 היא התשובה. ‏1 ו-8 רקורסיביים.</text></g></svg><figcaption>cis.poly.edu רוצה את gaia.cs.umass.edu. המחשב שואל את השרת המקומי ברקורסיה; השרת המקומי עובר על ההיררכיה באיטרציות ושומר כל תשובה ב-cache.</figcaption></figure>
+
+<div class="grid"><div class="box"><h4>שאילתה איטרטיבית (המקרה הרגיל)</h4><p>השרת המקומי שואל את ה-root ← ה-root עונה "לא יודע, תשאל את ה-TLD של ‎.edu בכתובת הזו" (<b>referral</b>) ← השרת המקומי שואל את ה-TLD ← referral לשרת המוסמך של umass.edu ← השרת המקומי שואל אותו ומקבל את רשומת ה-A.</p><p>8 הודעות: מחשב↔מקומי (2) + מקומי↔root ‏(2) + מקומי↔TLD ‏(2) + מקומי↔מוסמך (2). העומס נשאר על השרת המקומי.</p></div><div class="box"><h4>שאילתה רקורסיבית</h4><p>כל שרת שואל את הבא בשם הקודם: מקומי ← root ← TLD ← מוסמך, והתשובה חוזרת באותה שרשרת.</p><p>גם 8 הודעות, אבל זה מטיל עומס כבד על הרמות העליונות, ולכן שרתי root ו-TLD לא עושים את זה בפועל.</p></div></div>
+<h3>מטמון ו-TTL</h3>
+<div class="col"><p>כששרת כלשהו לומד מיפוי, הוא שומר אותו <b>במטמון</b> למשך ה-<b>TTL</b> של הרשומה. כתובות שרתי ה-TLD נשמרות בדרך כלל במטמון של השרתים המקומיים, ולכן כמעט לא פונים ל-root. רשומות במטמון יכולות להיות <b>לא עדכניות</b>: אם מחשב משנה IP, העולם עשוי לא לדעת עד שכל ה-TTL פגים ("תרגום שם לכתובת ב-best effort").</p></div>
+<div class="box worked"><h4>תזמון DNS + HTTP (קלאסי)</h4><p class="note">נתון</p><ul><li>מטמון ה-DNS המקומי ריק. פענוח השם דורש n שרתי DNS עם RTT<sub>1</sub>…RTT<sub>n</sub>. ‏RTT<sub>0</sub> לשרת ה-web; הדף הוא אובייקט קטן אחד.</li></ul><p class="note">פתרון</p><ol><li>זמן מהלחיצה לדף = (RTT<sub>1</sub> + … + RTT<sub>n</sub>) + 2·RTT<sub>0</sub></li><li>בלי מטמון בכלל, כל אחת מ-3 הרמות (root, ‏TLD, מוסמך) עולה שאילתה: פי 3 מזמן שאילתה בודדת מעל ה-RTT לשרת המקומי.</li><li>ביקור שני בתוך ה-TTL מדלג על DNS לגמרי.</li></ol></div>
+</section>
+<section id="rr">
+<h2><span class="n">9</span>רשומות משאבים (Resource records)</h2>
+<div class="col"><p>DNS שומר <b>רשומות משאבים</b> בצורה <code>(name, value, type, ttl)</code>.</p></div>
+<div class="tbl"><table><thead><tr><th>סוג</th><th>name</th><th>value</th><th>דוגמה</th></tr></thead><tbody><tr><td><b>A</b></td><td>שם מחשב</td><td>כתובת IPv4</td><td><code>(relay1.bar.foo.com, 145.37.93.126, A)</code></td></tr><tr><td><b>AAAA</b></td><td>שם מחשב</td><td>כתובת IPv6</td><td><code>(www.example.com, 2606:2800:220:1::248, AAAA)</code></td></tr><tr><td><b>NS</b></td><td>דומיין</td><td>שם של שרת שמות מוסמך לדומיין</td><td><code>(foo.com, dns.foo.com, NS)</code></td></tr><tr><td><b>CNAME</b></td><td>כינוי</td><td>השם הקנוני (האמיתי)</td><td><code>(www.ibm.com, servereast.backup2.ibm.com, CNAME)</code></td></tr><tr><td><b>MX</b></td><td>דומיין</td><td>שם שרת המייל (עם מספר עדיפות)</td><td><code>(foo.com, 10 mail.bar.foo.com, MX)</code></td></tr><tr><td>PTR</td><td>IP הפוך (in-addr.arpa)</td><td>שם מחשב (חיפוש הפוך)</td><td><code>(126.93.37.145.in-addr.arpa, relay1.bar.foo.com, PTR)</code></td></tr><tr><td>TXT / SOA</td><td></td><td>טקסט חופשי (SPF, מפתחות DKIM, אימות); תחילת סמכות של האזור (serial, ‏refresh, ‏TTL ברירת מחדל)</td><td></td></tr></tbody></table></div>
+<div class="def"><span class="tag">לזכור</span><p>רשומת NS מגיעה בדרך כלל יחד עם רשומת A ‏("glue") לשרת השמות עצמו, אחרת הייתם צריכים DNS כדי למצוא את שרת ה-DNS.</p></div>
+</section>
+<section id="dnsmsg">
+<h2><span class="n">10</span>הודעות פרוטוקול DNS</h2>
+<div class="col"><p>להודעות שאילתה ותשובה יש <b>אותו מבנה</b>: header של 12 בתים ואחריו ארבעה חלקים באורך משתנה.</p></div>
+<div class="bitwrap"><div class="bits" role="img" aria-label="הודעת DNS: ‏header של 12 בתים + 4 חלקים">
+<div class="sc" style="grid-column:span 4">0</div>
+<div class="sc" style="grid-column:span 4">4</div>
+<div class="sc" style="grid-column:span 4">8</div>
+<div class="sc" style="grid-column:span 4">12</div>
+<div class="sc" style="grid-column:span 4">16</div>
+<div class="sc" style="grid-column:span 4">20</div>
+<div class="sc" style="grid-column:span 4">24</div>
+<div class="sc" style="grid-column:span 4">28</div>
+<div class="key" style="grid-column:span 16">Identification<small>מספר שמתאים תשובה לשאילתה</small></div>
+<div class="" style="grid-column:span 16">Flags<small>QR, ‏opcode, ‏AA, ‏TC, ‏RD, ‏RA, ‏rcode</small></div>
+<div class="" style="grid-column:span 16"># questions</div>
+<div class="" style="grid-column:span 16"># answer RRs</div>
+<div class="" style="grid-column:span 16"># authority RRs</div>
+<div class="" style="grid-column:span 16"># additional RRs</div>
+<div class="" style="grid-column:span 32">Questions (משתנה): שם, סוג</div>
+<div class="hot" style="grid-column:span 32">Answers (משתנה): רשומות שעונות לשאילתה</div>
+<div class="" style="grid-column:span 32">Authority (משתנה): רשומות של שרתים מוסמכים</div>
+<div class="" style="grid-column:span 32">Additional (משתנה): רשומות עזר נוספות (glue)</div>
+</div></div>
+<p class="note" style="text-align:center">הודעת DNS: ‏header של 12 בתים + 4 חלקים</p>
+<div class="tbl"><table><thead><tr><th>דגל</th><th>משמעות</th></tr></thead><tbody><tr><td>QR</td><td>0 = שאילתה, 1 = תשובה</td></tr><tr><td>AA</td><td>תשובה מוסמכת: השרת שעונה מוסמך לשם</td></tr><tr><td>RD</td><td>מבקשים רקורסיה (נקבע ע"י הלקוח)</td></tr><tr><td>RA</td><td>רקורסיה זמינה (נקבע ע"י השרת)</td></tr><tr><td>TC</td><td>נחתך: התשובה לא נכנסה ב-datagram של UDP, לנסות שוב ב-TCP</td></tr><tr><td>rcode</td><td>0 אין שגיאה, 3 ‏NXDOMAIN (השם לא קיים)</td></tr></tbody></table></div>
+<pre class="code" dir="ltr">$ dig +norecurse @a.root-servers.net gaia.cs.umass.edu A
+;; flags: qr; QUERY: 1, ANSWER: 0, AUTHORITY: 13, ADDITIONAL: 26   ← referral, no answer
+;; AUTHORITY SECTION:
+edu.            172800  IN  NS  a.edu-servers.net.
+...
+$ dig gaia.cs.umass.edu A        (through your resolver)
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1
+gaia.cs.umass.edu.  3600  IN  A  128.119.245.12</pre>
+</section>
+<section id="register">
+<h2><span class="n">11</span>הכנסת הדומיין שלכם ל-DNS</h2>
+<div class="steps"><span class="tag">דוגמה: הסטארטאפ "Network Utopia"</span><ol><li>רושמים את <code>networkutopia.com</code> אצל <b>רשם (registrar)</b> שמוסמך ע"י ICANN. מוסרים את השמות וכתובות ה-IP של שרתי השמות המוסמכים (ראשי ומשני).</li><li>הרשם מכניס שתי רשומות לשרת ה-TLD של ‎.com: <code>(networkutopia.com, dns1.networkutopia.com, NS)</code> ו-<code>(dns1.networkutopia.com, 212.212.212.1, A)</code>.</li><li>בשרת המוסמך שלכם, יוצרים את רשומת ה-A של <code>www.networkutopia.com</code> ואת רשומת ה-MX של <code>networkutopia.com</code>.</li></ol></div>
+</section>
+<section id="dnssec">
+<h2><span class="n">12</span>אבטחת DNS (גשר לקורס האבטחה)</h2>
+<div class="tbl"><table><thead><tr><th>תקיפה</th><th>רעיון</th><th>איפה</th></tr></thead><tbody><tr><td>DDoS על שרתי root/TLD</td><td>להציף אותם בתעבורה. תקיפות על ה-root לא הצליחו עד היום (anycast, סינון, מטמון מקומי של כתובות TLD); תקיפות על TLD מסוכנות יותר.</td><td><a href="#ch-05">05</a></td></tr><tr><td>הרעלת מטמון / זיוף</td><td>לשלוח תשובות מזויפות ל-resolver כדי שישמור IP שגוי במטמון</td><td><a href="#ch-04--dns">04</a></td></tr><tr><td>החזרה / הגברה</td><td>שאילתה קטנה מזויפת, תשובה גדולה שנשלחת לקורבן</td><td><a href="#ch-05">05</a></td></tr><tr><td>DNSSEC</td><td>הגנה: שרתים מוסמכים חותמים על הרשומות שלהם (RFC 4033), ו-resolvers מאמתים את שרשרת החתימות מה-root</td><td><a href="#ch-07">07</a></td></tr></tbody></table></div>
+</section>
+<section id="review">
+<h2><span class="n">13</span>חזרה</h2>
+<div class="col review"><details><summary>למה SMTP נקרא פרוטוקול push, ובמה בוב משתמש כדי לקרוא את הדואר שלו?</summary><p>השולח יוזם את החיבור ודוחף את ההודעה לשרת המקבל. בוב מושך אותה מהשרת שלו עם IMAP, ‏POP3 או HTTP.</p></details><details><summary>איזו רשומה השרת של אליס מחפש כדי למסור ל-@someschool.edu?</summary><p>את רשומת ה-MX של someschool.edu, ואז את רשומת ה-A של שרת המייל שהיא מציינת.</p></details><details><summary>בפענוח איטרטיבי, מי עושה את העבודה?</summary><p>שרת ה-DNS המקומי: הוא שולח כל שאילתה בעצמו ועוקב אחרי ה-referrals מה-root ל-TLD ולמוסמך.</p></details><details><summary>מה קורה לרשומה במטמון אחרי שה-TTL שלה נגמר?</summary><p>היא נזרקת, והחיפוש הבא הולך שוב להיררכיה.</p></details><details><summary>למה DNS משתמש ב-UDP?</summary><p>השאילתות קטנות וצריכות להיות מהירות: בלי RTT של handshake ובלי מצב חיבור בשרתים עמוסים. הלקוח פשוט מנסה שוב באובדן; ‏TCP משמש כשהתשובה גדולה מדי (דגל TC) או ל-zone transfers.</p></details></div>
+<div class="quiz-mount" data-quiz="n04"></div>
+</section>

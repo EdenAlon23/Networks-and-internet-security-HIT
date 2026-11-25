@@ -1,0 +1,102 @@
+<header class="top"><div class="eyebrow">רשתות תקשורת · פרק N05</div><h1>P2P, סטרימינג של וידאו ותכנות sockets</h1><p class="lead">הרצאה 5 סוגרת את שכבת האפליקציה עם האפליקציות שנושאות את רוב התעבורה היום: הפצת קבצים ב-peer-to-peer, סטרימינג של וידאו מעל HTTP ורשתות הפצת תוכן. אחר כך היא מראה איך אפליקציה באמת מדברת עם שכבת התעבורה: תכנות sockets ב-UDP וב-TCP בפייתון.</p><nav class="toc" aria-label="סעיפים"><a href="#dist">זמן הפצה</a><a href="#bt">BitTorrent</a><a href="#video">יסודות וידאו</a><a href="#stream">סטרימינג ו-buffers</a><a href="#dash">DASH</a><a href="#cdn">CDN</a><a href="#sock">Sockets</a><a href="#udp">Sockets של UDP</a><a href="#tcp">Sockets של TCP</a><a href="#review">חזרה</a></nav></header>
+<section id="dist">
+<h2><span class="n">1</span>זמן הפצת קובץ: לקוח-שרת מול P2P</h2>
+<div class="col"><p>השאלה: כמה זמן לוקח להפיץ קובץ של <i>F</i> ביט משרת אחד ל-<i>N</i> משתמשים (peers)? סימונים: u<sub>s</sub> = קצב ההעלאה של השרת, u<sub>i</sub> = קצב ההעלאה של peer i, ‏d<sub>i</sub> = קצב ההורדה של peer i, ‏d<sub>min</sub> = קצב ההורדה של ה-peer האיטי ביותר. מניחים שבליבה יש רוחב פס בשפע (רק קווי הגישה משנים).</p></div>
+<figure><svg viewBox="0 0 720 300" width="720" role="img" aria-label="זמן הפצה: שרת-לקוח מול P2P" dir="ltr" style="direction:ltr"><g font-size="13"><line x1="80" y1="250" x2="610" y2="250" stroke="var(--ink)" stroke-width="1.3" marker-end="url(#ar)"/><line x1="80" y1="250" x2="80" y2="40" stroke="var(--ink)" stroke-width="1.3" marker-end="url(#ar)"/><text x="340" y="288" font-size="12" text-anchor="middle" fill="var(--muted)">N (מספר עמיתים)</text><text x="38" y="150" font-size="12" text-anchor="middle" fill="var(--muted)" transform="rotate(-90 38 150)">זמן הפצה מינימלי (שעות)</text><line x1="80" y1="250" x2="80" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="80" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">0</text><line x1="154.286" y1="250" x2="154.286" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="154.286" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">5</text><line x1="228.571" y1="250" x2="228.571" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="228.571" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">10</text><line x1="302.857" y1="250" x2="302.857" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="302.857" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">15</text><line x1="377.143" y1="250" x2="377.143" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="377.143" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">20</text><line x1="451.429" y1="250" x2="451.429" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="451.429" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">25</text><line x1="525.714" y1="250" x2="525.714" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="525.714" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">30</text><line x1="600" y1="250" x2="600" y2="254" stroke="var(--ink)" stroke-width="1"/><text x="600" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">35</text><line x1="76" y1="221.429" x2="80" y2="221.429" stroke="var(--ink)" stroke-width="1"/><text x="72" y="225.429" font-size="11" text-anchor="end" fill="var(--muted)">0.5</text><line x1="76" y1="192.857" x2="80" y2="192.857" stroke="var(--ink)" stroke-width="1"/><text x="72" y="196.857" font-size="11" text-anchor="end" fill="var(--muted)">1</text><line x1="76" y1="164.286" x2="80" y2="164.286" stroke="var(--ink)" stroke-width="1"/><text x="72" y="168.286" font-size="11" text-anchor="end" fill="var(--muted)">1.5</text><line x1="76" y1="135.714" x2="80" y2="135.714" stroke="var(--ink)" stroke-width="1"/><text x="72" y="139.714" font-size="11" text-anchor="end" fill="var(--muted)">2</text><line x1="76" y1="107.143" x2="80" y2="107.143" stroke="var(--ink)" stroke-width="1"/><text x="72" y="111.143" font-size="11" text-anchor="end" fill="var(--muted)">2.5</text><line x1="76" y1="78.5714" x2="80" y2="78.5714" stroke="var(--ink)" stroke-width="1"/><text x="72" y="82.5714" font-size="11" text-anchor="end" fill="var(--muted)">3</text><line x1="76" y1="50" x2="80" y2="50" stroke="var(--ink)" stroke-width="1"/><text x="72" y="54" font-size="11" text-anchor="end" fill="var(--muted)">3.5</text><polyline points="80,250 94.8571,244.286 109.714,238.571 124.571,232.857 139.429,227.143 154.286,221.429 169.143,215.714 184,210 198.857,204.286 213.714,198.571 228.571,192.857 243.429,187.143 258.286,181.429 273.143,175.714 288,170 302.857,164.286 317.714,158.571 332.571,152.857 347.429,147.143 362.286,141.429 377.143,135.714 392,130 406.857,124.286 421.714,118.571 436.571,112.857 451.429,107.143 466.286,101.429 481.143,95.7143 496,90 510.857,84.2857 525.714,78.5714 540.571,72.8571 555.429,67.1429 570.286,61.4286 585.143,55.7143 600,50" fill="none" stroke="var(--atk)" stroke-width="2.4" stroke-linejoin="round"/><polyline points="80,244.286 94.8571,244.286 109.714,240.476 124.571,236.813 139.429,233.673 154.286,230.952 169.143,228.571 184,226.471 198.857,224.603 213.714,222.932 228.571,221.429 243.429,220.068 258.286,218.831 273.143,217.702 288,216.667 302.857,215.714 317.714,214.835 332.571,214.021 347.429,213.265 362.286,212.562 377.143,211.905 392,211.29 406.857,210.714 421.714,210.173 436.571,209.664 451.429,209.184 466.286,208.73 481.143,208.301 496,207.895 510.857,207.509 525.714,207.143 540.571,206.794 555.429,206.463 570.286,206.146 585.143,205.844 600,205.556" fill="none" stroke="var(--def)" stroke-width="2.4" stroke-linejoin="round"/><text x="517.714" y="72.5714" font-size="12" text-anchor="end" fill="var(--atk)">שרת-לקוח: N/10</text><text x="525.714" y="197.143" font-size="12" text-anchor="middle" fill="var(--def)">P2P: נשאר מתחת ל-1</text></g></svg><figcaption>הפרמטרים מהספר: ‏F/u = שעה, ‏u<sub>s</sub> = 10u, ‏d<sub>min</sub> ≥ u<sub>s</sub>. שרת-לקוח גדל לינארית; P2P מתרחב מעצמו כי כל עמית חדש גם מעלה.</figcaption></figure>
+
+<div class="grid"><div class="box"><h4>לקוח-שרת</h4><p>השרת חייב להעלות N עותקים: N·F / u<sub>s</sub>. הלקוח האיטי צריך F / d<sub>min</sub> כדי להוריד.</p><p><code>D<sub>c-s</sub> ≥ max{ N·F/u<sub>s</sub> , F/d<sub>min</sub> }</code></p><p>גדל <b>ליניארית</b> ב-N.</p></div><div class="box"><h4>Peer-to-peer</h4><p>השרת חייב להעלות לפחות עותק אחד: F / u<sub>s</sub>. ה-peer האיטי צריך F / d<sub>min</sub>. בסך הכל צריך להוריד N·F ביטים, וקצב ההעלאה הכולל המרבי הוא u<sub>s</sub> + Σu<sub>i</sub>.</p><p><code>D<sub>P2P</sub> ≥ max{ F/u<sub>s</sub> , F/d<sub>min</sub> , N·F/(u<sub>s</sub> + Σu<sub>i</sub>) }</code></p><p>האיבר האחרון גדל עם N במונה, אבל גם המכנה גדל: כל peer מביא קיבולת העלאה.</p></div></div>
+<div class="box worked"><h4>מספרים</h4><p class="note">נתון</p><ul><li>F = 15 Gbit, ‏u<sub>s</sub> = 30 Mbps, ‏d<sub>min</sub> = d<sub>i</sub> = 2 Mbps, כל peer מעלה u = 300 kbps; ‏N = 10, 100, 1,000</li></ul><p class="note">פתרון</p><ol><li>F/d<sub>min</sub> = 15·10<sup>9</sup> / 2·10<sup>6</sup> = 7,500 s; ‏F/u<sub>s</sub> = 500 s</li><li>לקוח-שרת, N = 1,000: ‏N·F/u<sub>s</sub> = 500,000 s ≈ 139 שעות. מוכפל אם N מוכפל.</li><li>P2P, ‏N = 1,000: ‏N·F/(u<sub>s</sub> + N·u) = 1.5·10<sup>13</sup> / (3·10<sup>7</sup> + 3·10<sup>8</sup>) ≈ 45,455 s; מקסימום עם 7,500 ו-500 ← כ-12.6 שעות.</li><li>כש-N ← ∞ האיבר של P2P שואף ל-F/u = 15·10<sup>9</sup>/3·10<sup>5</sup> = 50,000 s: חסום, בזמן שלקוח-שרת ממשיך לגדול.</li></ol></div>
+<div class="atk"><span class="tag">מלכודת מבחן</span><p>תמיד לוקחים את ה<b>מקסימום</b> של האיברים (זה חסם תחתון: האילוץ האיטי ביותר קובע), וממירים יחידות קודם: F ניתן הרבה פעמים ב-Gbit או ב-GByte, והקצבים ב-Mbps.</p></div>
+</section>
+<section id="bt">
+<h2><span class="n">2</span>BitTorrent</h2>
+<div class="col"><ul><li>הקובץ מחולק ל-<b>chunks</b> של 256 KB. קבוצת ה-peers שמחליפים chunks של קובץ אחד נקראת <b>torrent</b>.</li><li><b>Tracker</b> עוקב אחרי ה-peers ב-torrent. peer שמצטרף נרשם אצל ה-tracker, מקבל רשימת peers ומתחבר לחלק מהם ("שכנים"). הרבה לקוחות משתמשים גם ב-DHT במקום tracker.</li><li>peer חדש לא מחזיק chunks; הוא צובר אותם עם הזמן ובמקביל מעלה את מה שיש לו. כשיש לו את כל הקובץ הוא יכול לעזוב (באנוכיות) או להישאר כ-<b>seeder</b>. peers מגיעים ועוזבים כל הזמן: <b>churn</b>.</li></ul></div>
+<div class="grid"><div class="box"><h4>בקשת chunks: הנדיר ביותר קודם</h4><p>מדי פעם אליס שואלת כל שכן איזה chunks יש לו, ואז מבקשת את ה-chunks החסרים ש<b>הכי נדירים</b> אצל השכנים שלה. כך chunks נדירים משוכפלים מהר, והקובץ שורד את ה-churn.</p></div><div class="box"><h4>שליחת chunks: עין תחת עין (tit-for-tat)</h4><p>אליס שולחת ל-<b>4 ה-peers ששולחים לה כרגע בקצב הגבוה ביותר</b>; האחרים <b>חסומים (choked)</b>. רשימת 4 המובילים מחושבת מחדש כל 10 שניות.</p><p>כל 30 שניות היא <b>משחררת אופטימית (optimistic unchoke)</b> peer אקראי אחד. כך peer חדש יכול להיכנס ל-4 המובילים, ו-peers חדשים שאין להם מה להציע עדיין מקבלים התחלה.</p></div></div>
+<div class="why"><span class="tag">למה</span><p>עין תחת עין הופך שיתוף פעולה לאסטרטגיה הכי טובה: ככל שמעלים יותר, מוצאים שותפי מסחר טובים יותר ומורידים מהר יותר. מי שרק לוקח מקבל רק את ה-optimistic unchoke מדי פעם.</p></div>
+</section>
+<section id="video">
+<h2><span class="n">3</span>וידאו: למה הוא שונה</h2>
+<div class="col"><p>סטרימינג של וידאו הוא הצרכן הגדול ביותר של רוחב פס באינטרנט (Netflix, ‏YouTube ו-Amazon Prime היו בערך 80% מהתעבורה הביתית סביב 2020). וידאו הוא רצף של תמונות שמוצגות בקצב קבוע, למשל 24–30 תמונות בשנייה, וכל תמונה היא מערך של פיקסלים. וידאו גולמי עצום, ולכן הוא <b>נדחס</b> בעזרת יתירות:</p></div>
+<div class="grid"><div class="box"><h4>מרחבית (בתוך תמונה)</h4><p>במקום לשלוח N ערכים של אותו צבע, שולחים רק שני ערכים: ערך הצבע ומספר החזרות N ‏(run-length).</p></div><div class="box"><h4>זמנית (בין תמונות)</h4><p>במקום לשלוח את כל frame ‏i+1, שולחים רק את ההבדלים מ-frame ‏i.</p></div><div class="box"><h4>CBR מול VBR</h4><p><b>CBR</b> (קצב קבוע): קצב הקידוד קבוע. <b>VBR</b> (משתנה): הקצב משתנה לפי כמות הקידוד המרחבי/הזמני. דוגמאות: MPEG-1 ‏(CD-ROM) ‏1.5 Mbps, ‏MPEG-2 ‏(DVD) ‏3–6 Mbps, ‏MPEG-4 / H.264 (אינטרנט) 64 kbps עד 12 Mbps.</p></div></div>
+</section>
+<section id="stream">
+<h2><span class="n">4</span>סטרימינג של וידאו מוקלט: ה-buffer של הלקוח</h2>
+<div class="col"><p>השרת מחזיק את הווידאו; הלקוח מנגן אותו בזמן ששאר הקובץ עדיין יורד. האתגרים: רוחב הפס בין השרת ללקוח <b>משתנה</b> עם הזמן (עומס בבית, ברשת הגישה, בליבה, בשרת), וגם האובדן וההשהיה משתנים.</p></div>
+<div class="steps"><span class="tag">מה קורה בזמן</span><ol><li>הווידאו מוקלט (למשל 30 frames לשנייה) ונשלח; ההשהיה ברשת משתנה (jitter), ולכן ה-frames מגיעים באופן לא אחיד.</li><li>הלקוח שומר את המידע שמגיע ב-<b>playout buffer</b> ומחכה <b>השהיית playout</b> התחלתית לפני שהוא מתחיל לנגן.</li><li>הניגון רץ אז בקצב הקבוע; ה-buffer סופג את השונות בהגעה. אם ה-buffer מתרוקן, הניגון נעצר (העיגול המסתובב) עד שהוא מתמלא שוב.</li><li>השהיה התחלתית גדולה יותר = פחות עצירות אבל המתנה ארוכה יותר לפני שהווידאו מתחיל. גם אינטראקטיביות (עצירה, דילוג קדימה) משנה.</li></ol></div>
+<div class="def"><span class="tag">לזכור</span><p>אם קצב המילוי הממוצע x קטן מקצב הניגון r, ה-buffer יתרוקן בסוף לא משנה כמה גדולה ההשהיה ההתחלתית; אם x &gt; r, השהיה התחלתית סבירה מונעת עצירות.</p></div>
+</section>
+<section id="dash">
+<h2><span class="n">5</span>DASH: ‏Dynamic Adaptive Streaming over HTTP</h2>
+<div class="grid"><div class="box"><h4>צד השרת</h4><p>מחלק את קובץ הווידאו להרבה <b>chunks</b> (כמה שניות כל אחד).</p><p>כל chunk מקודד בכמה קצבים שונים (למשל 300 kbps, ‏1 Mbps, ‏3 Mbps, ‏8 Mbps); כל קידוד נשמר בקובץ נפרד.</p><p>הקבצים משוכפלים בהרבה צמתי CDN.</p><p><b>קובץ manifest</b> נותן את ה-URLs של ה-chunks והקצבים השונים.</p></div><div class="box"><h4>צד הלקוח ("האינטליגנציה אצל הלקוח")</h4><p>מעריך מדי פעם את רוחב הפס מהשרת ללקוח.</p><p>לפי ה-manifest, מבקש chunk אחד בכל פעם עם HTTP GET רגיל.</p><p>בוחר את <b>קצב הקידוד המרבי שאפשר לקיים</b> ברוחב הפס הנוכחי, ויכול לבחור קצב שונה בזמנים שונים ומשרתים שונים.</p><p>מחליט <b>מתי</b> לבקש (שה-buffer לא יתרוקן ולא יעלה על גדותיו), <b>באיזה קצב</b>, ו<b>מאיפה</b> (שרת קרוב או עם רוחב פס גבוה).</p></div></div>
+<div class="why"><span class="tag">למה</span><p>למה מעל HTTP? ‏HTTP מעל TCP עובר firewalls ו-NAT בכל מקום, משתמש במטמוני web וב-CDN רגילים, והשרת נשאר חסר מצב. packets שאבדו נשלחים שוב ע"י TCP, וה-buffer של הלקוח מסתיר את ההשהיה.</p></div>
+</section>
+<section id="cdn">
+<h2><span class="n">6</span>רשתות הפצת תוכן (CDN)</h2>
+<div class="col"><p>איך מזרימים וידאו למאות אלפי משתמשים בו-זמנית? <b>אפשרות 1</b>: "מגה-שרת" אחד גדול: נקודת כשל יחידה, נקודת עומס ברשת, מסלול ארוך ללקוחות רחוקים, והרבה עותקים של אותו וידאו שנשלחים על אותו קו יוצא. זה לא סקלבילי. <b>אפשרות 2</b>: לשמור עותקים רבים של הסרטונים באתרים מפוזרים גיאוגרפית: <b>CDN</b>.</p></div>
+<div class="tbl"><table><thead><tr><th>גישה</th><th>רעיון</th><th>דוגמה</th></tr></thead><tbody><tr><td><b>Enter deep</b></td><td>להכניס שרתי CDN עמוק לתוך הרבה רשתות גישה, קרוב למשתמשים</td><td>Akamai: ‏כ-240,000 שרתים ביותר מ-120 מדינות (2015)</td></tr><tr><td><b>Bring home</b></td><td>פחות אשכולות, וגדולים יותר, ב-POPs ליד רשתות הגישה (לא בתוכן)</td><td>Limelight</td></tr></tbody></table></div>
+<div class="steps"><span class="tag">Netflix (שירות over-the-top)</span><ol><li>בוב גולש ב-Netflix (הדפים מוגשים מהשרתים של Netflix בענן) ובוחר פרק.</li><li>Netflix מחזיר <b>manifest</b> עם רשימת שרתי ה-CDN וה-URLs של ה-chunks בכל קצב.</li><li>הלקוח של בוב בוחר שרת (הרבה פעמים בתוך ה-ISP שלו: קופסאות Netflix Open Connect) ומבקש chunks עם DASH.</li><li>אם המסלול לשרת הזה נעשה עמוס, הלקוח מחליף קצב או שרת.</li></ol></div>
+<div class="col"><p>זה <b>OTT</b> ‏(over the top): השירות נבנה ע"י ספק התוכן מעל אינטרנט best-effort, עם כל האינטליגנציה בקצוות (איפה לשמור תוכן, איזה שרת לבחור, באיזה קצב), בלי עזרה מליבת הרשת. איך הלקוח מגיע לשרת ה-CDN הקרוב? הרבה פעמים דרך DNS: שרת ה-DNS המוסמך של ה-CDN מחזיר IP של שרת שקרוב לשרת ה-DNS המקומי של הלקוח (הפניה ב-DNS, ראו N04).</p></div>
+</section>
+<section id="sock">
+<h2><span class="n">7</span>תכנות sockets</h2>
+<div class="col"><p>המטרה: לבנות אפליקציות לקוח/שרת שמתקשרות בעזרת sockets. <b>Socket</b> הוא הדלת בין תהליך האפליקציה לפרוטוקול התעבורה מקצה לקצה. שני סוגי sockets לשני שירותי תעבורה: <b>UDP</b> ‏(datagram לא אמין) ו-<b>TCP</b> (אמין, זרם בתים).</p><p>האפליקציה מההרצאה: (1) הלקוח קורא שורת תווים מהמקלדת ושולח לשרת, (2) השרת ממיר לאותיות גדולות, (3) השרת שולח את המידע המעודכן בחזרה, (4) הלקוח מציג אותו.</p></div>
+<div class="tbl"><table><thead><tr><th></th><th>UDP</th><th>TCP</th></tr></thead><tbody><tr><td>חיבור</td><td>אין, בלי handshake</td><td>הלקוח חייב לפנות לשרת; לחיצת יד משולשת ב-<code>connect()</code></td></tr><tr><td>מיעון</td><td>השולח מצמיד IP ופורט יעד ל<b>כל</b> packet; המקבל מחלץ את ה-IP והפורט של השולח מה-packet שהגיע</td><td>נקבע פעם אחת ב-connect; אחר כך רק <code>send()</code></td></tr><tr><td>Sockets בשרת</td><td>socket אחד לכל הלקוחות</td><td>socket <b>קבלת פנים</b> שמאזין + socket <b>חיבור</b> חדש לכל לקוח</td></tr><tr><td>מסירה</td><td>datagrams יכולים לאבוד או להגיע בסדר אחר</td><td>זרם בתים אמין ומסודר (בלי גבולות הודעה)</td></tr><tr><td>מפתח ה-demultiplexing</td><td>(IP יעד, פורט יעד)</td><td>(IP מקור, פורט מקור, IP יעד, פורט יעד)</td></tr></tbody></table></div>
+</section>
+<section id="udp">
+<h2><span class="n">8</span>לקוח ושרת UDP בפייתון</h2>
+<h3>UDPClient.py</h3>
+<pre class="code" dir="ltr"><code>from socket import *
+serverName = &#x27;hostname&#x27;
+serverPort = 12000
+clientSocket = socket(AF_INET, SOCK_DGRAM)          # IPv4 + UDP
+message = input(&#x27;Input lowercase sentence:&#x27;)
+clientSocket.sendto(message.encode(), (serverName, serverPort))  # dest attached to EVERY datagram
+modifiedMessage, serverAddress = clientSocket.recvfrom(2048)    # reply + who sent it
+print(modifiedMessage.decode())
+clientSocket.close()</code></pre>
+<h3>UDPServer.py</h3>
+<pre class="code" dir="ltr"><code>from socket import *
+serverPort = 12000
+serverSocket = socket(AF_INET, SOCK_DGRAM)
+serverSocket.bind((&#x27;&#x27;, serverPort))                 # listen on port 12000, all interfaces
+print(&#x27;The server is ready to receive&#x27;)
+while True:
+    message, clientAddress = serverSocket.recvfrom(2048)   # clientAddress = (IP, port)
+    modifiedMessage = message.decode().upper()
+    serverSocket.sendto(modifiedMessage.encode(), clientAddress)</code></pre>
+<div class="col"><p>מריצים קודם את השרת, ואז את הלקוח בחלון שני (serverName = <code>localhost</code> כדי לבדוק על מחשב אחד). שימו לב שהשרת אף פעם לא עושה "accept": ה-datagram הראשון פשוט מגיע, והשרת לומד את כתובת הלקוח מ-<code>recvfrom</code>. ב-Wireshark, מסננים עם <code>udp.port == 12000</code>: רואים בדיוק שני datagrams, בלי handshake.</p></div>
+</section>
+<section id="tcp">
+<h2><span class="n">9</span>לקוח ושרת TCP בפייתון</h2>
+<h3>TCPClient.py</h3>
+<pre class="code" dir="ltr"><code>from socket import *
+serverName = &#x27;servername&#x27;
+serverPort = 12000
+clientSocket = socket(AF_INET, SOCK_STREAM)         # IPv4 + TCP
+clientSocket.connect((serverName, serverPort))      # 3-way handshake happens here
+sentence = input(&#x27;Input lowercase sentence:&#x27;)
+clientSocket.send(sentence.encode())                # no address: the connection knows it
+modifiedSentence = clientSocket.recv(1024)
+print(&#x27;From Server:&#x27;, modifiedSentence.decode())
+clientSocket.close()                                # FIN</code></pre>
+<h3>TCPServer.py</h3>
+<pre class="code" dir="ltr"><code>from socket import *
+serverPort = 12000
+serverSocket = socket(AF_INET, SOCK_STREAM)
+serverSocket.bind((&#x27;&#x27;, serverPort))
+serverSocket.listen(1)                              # welcoming socket, backlog 1
+print(&#x27;The server is ready to receive&#x27;)
+while True:
+    connectionSocket, addr = serverSocket.accept()  # NEW socket for this client
+    sentence = connectionSocket.recv(1024).decode()
+    capitalizedSentence = sentence.upper()
+    connectionSocket.send(capitalizedSentence.encode())
+    connectionSocket.close()                        # close this client, keep listening</code></pre>
+<div class="steps"><span class="tag">מה קורה על הקו</span><ol><li><code>listen()</code>: ה-socket המקבל של השרת מחכה בפורט 12000.</li><li><code>connect()</code>: מערכת ההפעלה של הלקוח שולחת SYN, מקבלת SYN-ACK, ועונה ACK ‏(1.5 RTT; הלקוח יכול לשלוח אחרי RTT אחד).</li><li><code>accept()</code> מחזיר socket <b>חדש</b> שמחובר ללקוח הספציפי הזה (ה-4-tuple שלו). ה-socket המקבל ממשיך להאזין ללקוחות אחרים.</li><li><code>send()/recv()</code> מעבירים בתים; ‏TCP מטפל מתחת ב-ACKs, שידורים חוזרים וסדר.</li><li><code>close()</code> שולח FIN; הצד השני מאשר וסוגר גם את החצי שלו.</li></ol></div>
+<div class="real"><span class="tag">בעולם האמיתי</span><p>השרת הזה מטפל בלקוח אחד בכל פעם (הלולאה נחסמת ב-recv). שרתים אמיתיים משתמשים ב-thread או בתהליך לכל חיבור, או בלולאת אירועים (select/epoll, ‏asyncio). ובגלל ש-TCP הוא זרם בתים, <code>send()</code> אחד יכול להגיע כמה <code>recv()</code>: פרוטוקולים אמיתיים מוסיפים מסגור הודעות משלהם (שדה אורך או מפריד, כמו CRLF ו-Content-Length ב-HTTP).</p></div>
+</section>
+<section id="review">
+<h2><span class="n">10</span>חזרה</h2>
+<div class="col review"><details><summary>למה זמן ההפצה ב-P2P נשאר חסום כש-N גדל?</summary><p>כל peer חדש מוסיף קיבולת העלאה u<sub>i</sub>, כך שקצב ההעלאה הכולל גדל יחד עם הביקוש.</p></details><details><summary>מה peer ב-BitTorrent מבקש קודם, ולמי הוא שולח?</summary><p>את ה-chunks הנדירים ביותר אצל השכנים; הוא שולח ל-4 ה-peers ששולחים אליו הכי מהר (כל 10 שניות), ועוד optimistic unchoke אחד כל 30 שניות.</p></details><details><summary>ב-DASH, מי מחליט על קצב הקידוד?</summary><p>הלקוח, chunk אחרי chunk, לפי הערכת רוחב הפס, מצב ה-buffer וה-manifest.</p></details><details><summary>למה שרת TCP צריך שני סוגי sockets?</summary><p>ה-socket המקבל מקבל חיבורים חדשים; כל חיבור שהתקבל מקבל socket משלו שמזוהה ע"י ה-4-tuple המלא.</p></details><details><summary>שני לקוחות UDP שולחים לפורט 12000 של השרת. בכמה sockets השרת משתמש?</summary><p>אחד: ‏UDP עושה demultiplexing רק לפי IP ופורט יעד.</p></details></div>
+<div class="quiz-mount" data-quiz="n05"></div>
+</section>

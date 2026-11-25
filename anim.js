@@ -582,9 +582,11 @@
   Player.prototype.btn = function (txt, label) { const b = this.ctr.querySelector('.ap-play'); b.textContent = txt; b.setAttribute('aria-label', label); };
   Player.prototype.destroy = function () { this.pause(); this.clear(); };
 
+  // scenarios reused by the networks course chapters (shown after the chapter's own ones)
+  const ALSO = { encap: ['n01'], trace: ['n02', 'n09'], dns: ['n04'], smtp: ['n04'], tcp: ['n07'], frag: ['n08'], nat: ['n08'], route: ['n08'], arp: ['n10'], dhcp: ['n08'] };
   window.Anim = {
     scenarios: S,
-    byChapter: (ch) => S.filter(s => s.ch === ch),
+    byChapter: (ch) => S.filter(s => s.ch === ch).concat(S.filter(s => s.ch !== ch && (ALSO[s.id] || s.also || []).includes(ch))),
     get: (id) => loc(S.find(s => s.id === id)),
     loc: loc,
     mount: (root, id) => new Player(root, loc(typeof id === 'string' ? S.find(s => s.id === id) : id)),
