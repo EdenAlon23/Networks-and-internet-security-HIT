@@ -303,6 +303,9 @@ ol.sum-pts li::before{content:counter(sp);position:absolute;inset-inline-start:0
 @media (prefers-reduced-motion:no-preference){.prog i{transition:width .4s ease}}
 .prog-txt{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
 :root[lang="he"] .prog-txt{font-family:var(--f-body)}
+.prog-foot{margin:1.5rem 0 0;color:var(--muted);font-size:.88rem}
+.prog-reset{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:.2rem .8rem;margin-inline-start:.4rem;cursor:pointer;font-size:.85rem}
+.prog-reset:hover,.prog-reset.armed{border-color:var(--atk);color:var(--atk)}
 .card.done{border-inline-start:4px solid var(--def)}
 .card.done .num{color:var(--def)}
 .ctag{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
@@ -432,14 +435,14 @@ const L = HE ? {
   vEyebrow:'כל האנימציות', vH1:'אנימציות של packets', vLead:'כל התרחישים מכל הפרקים. בחרו אחד למטה.', thCh:'פרק', thAn:'אנימציה',
   noMatch:'אין תוצאות. נסו מילה אחרת.', indexing:'עדיין מאנדקס את הפרקים…', resAnim:'▶ אנימציה · פרק ', resCh:'פרק ',
   search:'חיפוש נושאים, headers, כלים… (לחצו /)', searchLabel:'חיפוש בקורס', lang:'English', langLabel:'Switch to English', chapters:'פרקים',
-  chapterCard:'פרק ', subject:'נושא ', practice:'תרגול ומבחנים', sums:'סיכומי פרקים', sumBtn:'סיכום הפרק', sumEye:'סיכום · פרק ', sumBig:'הרעיון המרכזי', sumPts:'הנקודות החשובות', sumKeys:'חובה לזכור למבחן', sumFull:'לפרק המלא', sumQuiz:'לבוחן של הפרק', sumPrint:'הדפסה / PDF', sumPrev:'הסיכום הקודם', sumNext:'הסיכום הבא', sumEnd:'סיימתם את הפרק? כל הפרק בשתי דקות קריאה: הרעיון המרכזי, הנקודות החשובות ומה חובה לזכור.', sumAllEye:'סיכומי פרקים', sumAllH:'כל הסיכומים', sumAllLead:'סיכום קצר לכל פרק בשני הקורסים: הרעיון המרכזי, הנקודות החשובות עם קישור לסעיף בפרק, ומה חובה לזכור למבחן. אפשר להדפיס קורס שלם כחוברת חזרה.', sumAll:'כל הקורסים', sumOpen:'לסיכום המלא', course:'קורס', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה', doneOff:'סימון כהושלם', doneOn:'הושלם', progOf:'פרקים הושלמו', progLbl:'התקדמות', doneEnd:'סיימתם את הפרק? סמנו אותו כהושלם כדי לעקוב אחרי ההתקדמות.'
+  chapterCard:'פרק ', subject:'נושא ', practice:'תרגול ומבחנים', sums:'סיכומי פרקים', sumBtn:'סיכום הפרק', sumEye:'סיכום · פרק ', sumBig:'הרעיון המרכזי', sumPts:'הנקודות החשובות', sumKeys:'חובה לזכור למבחן', sumFull:'לפרק המלא', sumQuiz:'לבוחן של הפרק', sumPrint:'הדפסה / PDF', sumPrev:'הסיכום הקודם', sumNext:'הסיכום הבא', sumEnd:'סיימתם את הפרק? כל הפרק בשתי דקות קריאה: הרעיון המרכזי, הנקודות החשובות ומה חובה לזכור.', sumAllEye:'סיכומי פרקים', sumAllH:'כל הסיכומים', sumAllLead:'סיכום קצר לכל פרק בשני הקורסים: הרעיון המרכזי, הנקודות החשובות עם קישור לסעיף בפרק, ומה חובה לזכור למבחן. אפשר להדפיס קורס שלם כחוברת חזרה.', sumAll:'כל הקורסים', sumOpen:'לסיכום המלא', course:'קורס', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה', doneOff:'סימון כהושלם', doneOn:'הושלם', progOf:'פרקים הושלמו', progLbl:'התקדמות', progNote:'ההתקדמות נשמרת בדפדפן הזה בלבד.', progReset:'איפוס התקדמות', progSure:'ללחוץ שוב כדי לאפס', doneEnd:'סיימתם את הפרק? סמנו אותו כהושלם כדי לעקוב אחרי ההתקדמות.'
 } : {
   intro:'Introduction', allAnim:'All animations', loading:'Loading…', loadingCh:'Loading chapter ', loadErr:'Could not load this chapter (', loadErr2:'). Refresh the page to try again.',
   animH:'▶ Animations', animP:'Press Play to watch, or step through with ⏮ ⏭. The right panel shows the real header fields at each step.',
   vEyebrow:'All animations', vH1:'Packet animations', vLead:'Every scenario from every chapter. Pick one below.', thCh:'Chapter', thAn:'Animation',
   noMatch:'No matches. Try another term.', indexing:'Still indexing chapters…', resAnim:'▶ ANIMATION · CH ', resCh:'CH ',
   search:'Search topics, headers, tools… (press /)', searchLabel:'Search the course', lang:'עברית', langLabel:'החלפה לעברית', chapters:'Chapters',
-  chapterCard:'CHAPTER ', subject:'SUBJECT ', practice:'Practice quiz', sums:'Chapter summaries', sumBtn:'Chapter summary', sumEye:'Summary · Chapter ', sumBig:'The big idea', sumPts:'Key points', sumKeys:'Must remember for the exam', sumFull:'Read the full chapter', sumQuiz:'Chapter quiz', sumPrint:'Print / PDF', sumPrev:'Previous summary', sumNext:'Next summary', sumEnd:'Finished the chapter? The whole chapter in a two-minute read: the big idea, the key points and what to remember.', sumAllEye:'Chapter summaries', sumAllH:'All summaries', sumAllLead:'A short summary of every chapter in both courses: the big idea, the key points with a link to the section, and what to remember for the exam. Print a whole course as a revision booklet.', sumAll:'All courses', sumOpen:'Open the full summary', course:'Course', anim1:'1 animation', animN:' animations', reading:'reading', doneOff:'Mark as done', doneOn:'Done', progOf:'chapters done', progLbl:'Progress', doneEnd:'Finished the chapter? Mark it as done to track your progress.'
+  chapterCard:'CHAPTER ', subject:'SUBJECT ', practice:'Practice quiz', sums:'Chapter summaries', sumBtn:'Chapter summary', sumEye:'Summary · Chapter ', sumBig:'The big idea', sumPts:'Key points', sumKeys:'Must remember for the exam', sumFull:'Read the full chapter', sumQuiz:'Chapter quiz', sumPrint:'Print / PDF', sumPrev:'Previous summary', sumNext:'Next summary', sumEnd:'Finished the chapter? The whole chapter in a two-minute read: the big idea, the key points and what to remember.', sumAllEye:'Chapter summaries', sumAllH:'All summaries', sumAllLead:'A short summary of every chapter in both courses: the big idea, the key points with a link to the section, and what to remember for the exam. Print a whole course as a revision booklet.', sumAll:'All courses', sumOpen:'Open the full summary', course:'Course', anim1:'1 animation', animN:' animations', reading:'reading', doneOff:'Mark as done', doneOn:'Done', progOf:'chapters done', progLbl:'Progress', progNote:'Progress is saved in this browser only.', progReset:'Reset progress', progSure:'Click again to reset', doneEnd:'Finished the chapter? Mark it as done to track your progress.'
 };
 const lab = id => id.toUpperCase();
 const courseOf = id => COURSES.find(k => k.subj.some(g => g.ch.includes(id)));
@@ -501,6 +504,10 @@ function progBar(k){
   const txt = n + ' / ' + ids.length + ' ' + L.progOf;
   return '<div class="prog-row"><div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="' + ids.length + '" aria-valuenow="' + n + '" aria-valuetext="' + esc(txt) + '" aria-label="' + esc(L.progLbl + ': ' + cT(k)) + '"><i style="width:' + pct + '%"></i></div><span class="prog-txt">' + esc(txt) + '</span></div>';
 }
+function progFoot(){
+  if (!Progress.count(CH.map(c => c.id))) return '';
+  return '<p class="prog-foot">' + esc(L.progNote) + ' <button type="button" class="prog-reset">' + esc(L.progReset) + '</button></p>';
+}
 function courseBlocks(){
   return COURSES.map(k => '<div class="course" id="course-' + k.key + '"><div class="course-h"><span class="ctag">' + esc(HE ? k.htag : k.tag) + '</span><h2>' + esc(HE ? k.ht : k.t) + (HE ? '' : ' <span class="he" lang="he">' + esc(k.ht) + '</span>') + '</h2><p>' + esc(HE ? k.hd : k.d) + '</p>' + progBar(k) + '</div>' + cardsFor(k) + '</div>').join('');
 }
@@ -513,7 +520,7 @@ function homeEn(){
    + '<div class="stats"><span>2 courses</span><span>' + CH.length + ' chapters</span><span>' + n + ' packet animations</span><span>' + q + ' practice questions</span><span>search across everything</span></div></div>'
    + '<aside class="author"><div class="eyebrow">Created by</div><div class="who">Eden Alon</div><p class="note" style="margin:.2rem 0 0">Computer Science, 3rd year</p><dl><dt>Courses</dt><dd><span class="he" lang="he">רשתות תקשורת</span> · <span class="he" lang="he">אבטחת רשתות ומשרתת</span></dd><dt>Institute</dt><dd>HIT, Holon Institute of Technology</dd><dt>Purpose</dt><dd>A helping tool for studying both courses</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd><dt>LinkedIn</dt><dd><a href="https://www.linkedin.com/in/eden-izhak-alon">eden-izhak-alon</a></dd></dl></aside></section>'
    + '<div class="how"><div><b>Networks first</b><p class="note">Course 1 is the base the security course assumes. Chapter N02 and N11 hold every formula the exams use.</p></div><div><b>Watch, then read</b><p class="note">Each chapter opens with its animations. Pause on any step to read the exact header values.</p></div><div><b>Practice</b><p class="note">Every chapter ends with a quiz with explanations. The practice page mixes questions from a whole course.</p></div><div><b>Search</b><p class="note">Press / and type any term: a header field, a port, a formula, a tool.</p></div></div>'
-   + courseBlocks()
+   + courseBlocks() + progFoot()
    + '<p class="disclaimer">An independent study aid written by a student, not official course material and not affiliated with or endorsed by HIT or the course staff. The explanations are original summaries of the course topics; notes marked as additions go beyond the slides. Tools are described for learning and for authorized lab use only.</p></div>';
 }
 function homeHe(){
@@ -525,10 +532,19 @@ function homeHe(){
    + '<div class="stats"><span>2 קורסים</span><span>' + CH.length + ' פרקים</span><span>' + n + ' אנימציות של packets</span><span>' + q + ' שאלות תרגול</span><span>חיפוש בכל התוכן</span></div></div>'
    + '<aside class="author"><div class="eyebrow">נוצר ע"י</div><div class="who">עדן אלון</div><p class="note" style="margin:.2rem 0 0">מדעי המחשב, שנה ג׳</p><dl><dt>קורסים</dt><dd>רשתות תקשורת · אבטחת רשתות ומשרתת</dd><dt>מוסד</dt><dd>HIT, מכון טכנולוגי חולון</dd><dt>מטרה</dt><dd>כלי עזר ללימוד שני הקורסים</dd><dt>GitHub</dt><dd><a href="https://github.com/EdenAlon23">EdenAlon23</a></dd><dt>LinkedIn</dt><dd><a href="https://www.linkedin.com/in/eden-izhak-alon">eden-izhak-alon</a></dd></dl></aside></section>'
    + '<div class="how"><div><b>קודם רשתות</b><p class="note">קורס 1 הוא הבסיס שקורס האבטחה מניח. בפרקים N02 ו-N11 נמצאות כל הנוסחאות שהמבחנים משתמשים בהן.</p></div><div><b>לצפות, ואז לקרוא</b><p class="note">כל פרק נפתח באנימציות שלו. עצרו בכל צעד כדי לקרוא את ערכי ה-header המדויקים.</p></div><div><b>לתרגל</b><p class="note">כל פרק נגמר בבוחן עם הסברים. דף התרגול מערבב שאלות מקורס שלם.</p></div><div><b>לחפש</b><p class="note">לחצו / והקלידו כל מונח: שדה header, פורט, נוסחה, כלי. החיפוש עובד גם בעברית.</p></div></div>'
-   + courseBlocks()
+   + courseBlocks() + progFoot()
    + '<p class="disclaimer">כלי עזר עצמאי שנכתב ע"י סטודנט. זה לא חומר רשמי של הקורס, ואין לו קשר ל-HIT או לצוות הקורס ולא קיבל את אישורם. ההסברים הם סיכומים מקוריים של נושאי הקורס; הערות שמסומנות כתוספות חורגות מהשקפים. הכלים מתוארים ללמידה ולשימוש במעבדה מורשית בלבד.</p></div>';
 }
-function home(){ stopPlayer(); setOn('home'); HE ? homeHe() : homeEn(); window.scrollTo(0, 0); }
+function home(){ stopPlayer(); setOn('home'); HE ? homeHe() : homeEn(); wireReset(); window.scrollTo(0, 0); }
+// two-step reset instead of confirm(): no blocking dialog, and a stray tap can't wipe a semester of progress
+function wireReset(){
+  const b = $('.prog-reset', main); if (!b) return;
+  let armed = false, t;
+  b.onclick = () => {
+    if (!armed) { armed = true; b.textContent = L.progSure; b.classList.add('armed'); t = setTimeout(() => { armed = false; b.textContent = L.progReset; b.classList.remove('armed'); }, 4000); return; }
+    clearTimeout(t); Progress.clear(); const y = window.scrollY; HE ? homeHe() : homeEn(); wireReset(); window.scrollTo(0, y);
+  };
+}
 function vidStrip(list, startId){
   const box = document.createElement('div'); box.className = 'vids';
   box.innerHTML = '<div class="vids-h"><h2>' + L.animH + '</h2><p>' + L.animP + '</p></div><div class="vtabs"></div><div class="vplayer"></div>';

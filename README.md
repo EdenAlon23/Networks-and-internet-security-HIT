@@ -45,6 +45,7 @@ Every security chapter opens with a "Before you start" box linking to the networ
 - **Worked examples** in exam format for every calculation topic.
 - **153 practice questions** with explanations: a quiz at the end of every topic chapter, and a practice page that builds mixed sets per chapter or per course.
 - **A summary for every chapter** (English and Hebrew): the big idea, the key points with links to each section, and what to remember for the exam. A "Chapter summary" button opens it from each chapter, and the summaries page shows a whole course at once, ready to print as a revision booklet.
+- **Study progress tracker.** Mark any chapter as done (button under the title and at the end). Finished chapters get a check in the side menu, and the home page shows a progress bar per course. Progress is stored in your browser's `localStorage` only, syncs between open tabs, and can be reset from the home page.
 - **Instant search** across both courses and all animations (press `/`).
 - **English / עברית switch** in the top bar. Technical terms, protocol names and header field names stay in English.
 - Responsive layout with light and dark themes.
