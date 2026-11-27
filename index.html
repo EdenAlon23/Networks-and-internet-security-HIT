@@ -63,10 +63,12 @@ button,select,input{font:inherit;color:inherit}
 .frame{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:calc(100vh - 56px)}
 .rail{background:var(--rail);border-right:1px solid var(--line);padding:1rem .7rem 3rem;position:sticky;top:calc(env(safe-area-inset-top,0px) + 56px);height:calc(100vh - 56px - env(safe-area-inset-top,0px));overflow:auto}
 .rail h6{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:.4rem .5rem .5rem}
-.rail a{display:grid;grid-template-columns:2.1rem 1fr;gap:.2rem;align-items:baseline;text-decoration:none;color:var(--ink);padding:.42rem .5rem;border-radius:8px;font-size:.92rem;line-height:1.35}
+.rail a{display:grid;grid-template-columns:2.1rem 1fr auto;gap:.2rem;align-items:baseline;text-decoration:none;color:var(--ink);padding:.42rem .5rem;border-radius:8px;font-size:.92rem;line-height:1.35}
 .rail a span{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
 .rail a:hover{background:var(--surface)}
 .rail a.on{background:var(--surface);box-shadow:inset 3px 0 0 var(--accent);font-weight:600}
+.rail a.done::after{content:"✓";content:"✓" / "done";color:var(--def);font-weight:700;font-size:.85rem}
+:root[lang="he"] .rail a.done::after{content:"✓" / "הושלם"}
 .rail hr{border:0;border-top:1px solid var(--line);margin:.7rem .5rem}
 main{min-width:0;padding-block:0 5rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:980px;margin:0 auto}
@@ -444,6 +446,28 @@ const langBtn = $('#langBtn'); langBtn.textContent = L.lang; langBtn.setAttribut
 langBtn.onclick = () => { try { localStorage.setItem('netsec-lang', HE ? 'en' : 'he'); } catch (e) {} location.reload(); };
 $('#menuBtn').onclick = () => { const o = rail.classList.toggle('open'); $('#menuBtn').setAttribute('aria-expanded', o); };
 rail.addEventListener('click', e => { if (e.target.closest('a')) rail.classList.remove('open'); });
+
+// ---------- study progress (per browser, kept in localStorage) ----------
+const PKEY = 'netsec-done';
+const Progress = (() => {
+  let done = new Set();
+  const read = () => {
+    try { const v = JSON.parse(localStorage.getItem(PKEY) || '[]'); done = new Set(Array.isArray(v) ? v.filter(id => getCh(id)) : []); }
+    catch (e) { done = new Set(); }
+  };
+  const save = () => { try { localStorage.setItem(PKEY, JSON.stringify([...done])); } catch (e) { /* storage blocked: keep it for this visit only */ } };
+  read();
+  // another tab changed the progress: pick it up so both tabs agree
+  window.addEventListener('storage', e => { if (e.key === PKEY) { read(); paintRail(); } });
+  return {
+    has: id => done.has(id),
+    set(id, on){ if (!getCh(id)) return; on ? done.add(id) : done.delete(id); save(); paintRail(); },
+    count: ids => ids.filter(id => done.has(id)).length,
+    clear(){ done.clear(); save(); paintRail(); }
+  };
+})();
+function paintRail(){ rail.querySelectorAll('a[data-ch]').forEach(a => a.classList.toggle('done', Progress.has(a.dataset.ch))); }
+paintRail();
 
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function getCh(id){ return CH.find(c => c.id === id); }
