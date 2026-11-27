@@ -217,6 +217,15 @@ td.num{font-variant-numeric:tabular-nums}
   .brand span{display:none}
   .ask-btn{padding:.5rem .7rem}
 }
+/* phones and other touch screens: fingers need ~40px targets, and iOS zooms into any field under 16px */
+@media (max-width:860px),(pointer:coarse){
+  nav.toc a,.vtabs button,.sum-acts a,.sum-acts button,.sum-tabs a,.done-btn,.prog-reset{min-height:40px;display:inline-flex;align-items:center}
+  .brand{min-height:40px}
+  .ap-spd select{font-size:16px;min-height:40px}
+  .ap-dots{gap:22px 6px}
+  .ap-dot{position:relative;height:10px}
+  .ap-dot::after{content:"";position:absolute;inset:-11px -3px}
+}
 @media (max-width:520px){.ask-btn .lbl{display:none}.lang-btn{padding:.45rem .55rem}}
 @media (max-width:900px){:root[dir="rtl"] .rail{left:auto;right:0;box-shadow:-12px 0 40px rgba(0,0,0,.18)}}
 
