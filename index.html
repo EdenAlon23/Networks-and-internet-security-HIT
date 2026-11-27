@@ -460,8 +460,13 @@ rail.setAttribute('aria-label', L.chapters);
 const qInput = $('#q'); qInput.placeholder = L.search; qInput.setAttribute('aria-label', L.searchLabel);
 const langBtn = $('#langBtn'); langBtn.textContent = L.lang; langBtn.setAttribute('aria-label', L.langLabel); langBtn.lang = HE ? 'en' : 'he';
 langBtn.onclick = () => { try { localStorage.setItem('netsec-lang', HE ? 'en' : 'he'); } catch (e) {} location.reload(); };
-$('#menuBtn').onclick = () => { const o = rail.classList.toggle('open'); $('#menuBtn').setAttribute('aria-expanded', o); };
-rail.addEventListener('click', e => { if (e.target.closest('a')) rail.classList.remove('open'); });
+const menuBtn = $('#menuBtn');
+const setMenu = open => { rail.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', open); };
+menuBtn.onclick = () => setMenu(!rail.classList.contains('open'));
+rail.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
+// phone drawer: a tap outside it or Escape closes it, like any native drawer
+document.addEventListener('click', e => { if (rail.classList.contains('open') && !rail.contains(e.target) && !menuBtn.contains(e.target)) setMenu(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && rail.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
 
 // ---------- study progress (per browser, kept in localStorage) ----------
 const PKEY = 'netsec-done';
