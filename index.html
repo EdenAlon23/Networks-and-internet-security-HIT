@@ -226,6 +226,11 @@ td.num{font-variant-numeric:tabular-nums}
 .sum-end{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:2rem 0 1rem;padding:1rem 1.2rem;border:1px solid var(--line);border-inline-start:4px solid var(--accent);border-radius:10px;background:var(--surface)}
 .sum-end p{margin:0;flex:1 1 240px}
 .sum-end .sum-btn{margin:0}
+.done-btn{display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;margin-inline-start:.5rem;border:1px solid var(--line);color:var(--ink);background:var(--surface);border-radius:999px;padding:.35rem .9rem;font-weight:600;font-size:.9rem;cursor:pointer}
+.done-btn:hover{border-color:var(--def);color:var(--def)}
+.done-btn[aria-pressed="true"]{border-color:var(--def);color:var(--def);background:var(--def-soft)}
+.sum-end .done-btn{margin:0}
+@media print{.done-btn{display:none!important}}
 .sum-acts{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
 .sum-acts a,.sum-acts button{font:inherit;font-size:.88rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.3rem .8rem;text-decoration:none;cursor:pointer}
 .sum-acts a:hover,.sum-acts button:hover{border-color:var(--accent);color:var(--accent)}
@@ -419,14 +424,14 @@ const L = HE ? {
   vEyebrow:'כל האנימציות', vH1:'אנימציות של packets', vLead:'כל התרחישים מכל הפרקים. בחרו אחד למטה.', thCh:'פרק', thAn:'אנימציה',
   noMatch:'אין תוצאות. נסו מילה אחרת.', indexing:'עדיין מאנדקס את הפרקים…', resAnim:'▶ אנימציה · פרק ', resCh:'פרק ',
   search:'חיפוש נושאים, headers, כלים… (לחצו /)', searchLabel:'חיפוש בקורס', lang:'English', langLabel:'Switch to English', chapters:'פרקים',
-  chapterCard:'פרק ', subject:'נושא ', practice:'תרגול ומבחנים', sums:'סיכומי פרקים', sumBtn:'סיכום הפרק', sumEye:'סיכום · פרק ', sumBig:'הרעיון המרכזי', sumPts:'הנקודות החשובות', sumKeys:'חובה לזכור למבחן', sumFull:'לפרק המלא', sumQuiz:'לבוחן של הפרק', sumPrint:'הדפסה / PDF', sumPrev:'הסיכום הקודם', sumNext:'הסיכום הבא', sumEnd:'סיימתם את הפרק? כל הפרק בשתי דקות קריאה: הרעיון המרכזי, הנקודות החשובות ומה חובה לזכור.', sumAllEye:'סיכומי פרקים', sumAllH:'כל הסיכומים', sumAllLead:'סיכום קצר לכל פרק בשני הקורסים: הרעיון המרכזי, הנקודות החשובות עם קישור לסעיף בפרק, ומה חובה לזכור למבחן. אפשר להדפיס קורס שלם כחוברת חזרה.', sumAll:'כל הקורסים', sumOpen:'לסיכום המלא', course:'קורס', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה'
+  chapterCard:'פרק ', subject:'נושא ', practice:'תרגול ומבחנים', sums:'סיכומי פרקים', sumBtn:'סיכום הפרק', sumEye:'סיכום · פרק ', sumBig:'הרעיון המרכזי', sumPts:'הנקודות החשובות', sumKeys:'חובה לזכור למבחן', sumFull:'לפרק המלא', sumQuiz:'לבוחן של הפרק', sumPrint:'הדפסה / PDF', sumPrev:'הסיכום הקודם', sumNext:'הסיכום הבא', sumEnd:'סיימתם את הפרק? כל הפרק בשתי דקות קריאה: הרעיון המרכזי, הנקודות החשובות ומה חובה לזכור.', sumAllEye:'סיכומי פרקים', sumAllH:'כל הסיכומים', sumAllLead:'סיכום קצר לכל פרק בשני הקורסים: הרעיון המרכזי, הנקודות החשובות עם קישור לסעיף בפרק, ומה חובה לזכור למבחן. אפשר להדפיס קורס שלם כחוברת חזרה.', sumAll:'כל הקורסים', sumOpen:'לסיכום המלא', course:'קורס', anim1:'אנימציה אחת', animN:' אנימציות', reading:'קריאה', doneOff:'סימון כהושלם', doneOn:'הושלם', doneEnd:'סיימתם את הפרק? סמנו אותו כהושלם כדי לעקוב אחרי ההתקדמות.'
 } : {
   intro:'Introduction', allAnim:'All animations', loading:'Loading…', loadingCh:'Loading chapter ', loadErr:'Could not load this chapter (', loadErr2:'). Refresh the page to try again.',
   animH:'▶ Animations', animP:'Press Play to watch, or step through with ⏮ ⏭. The right panel shows the real header fields at each step.',
   vEyebrow:'All animations', vH1:'Packet animations', vLead:'Every scenario from every chapter. Pick one below.', thCh:'Chapter', thAn:'Animation',
   noMatch:'No matches. Try another term.', indexing:'Still indexing chapters…', resAnim:'▶ ANIMATION · CH ', resCh:'CH ',
   search:'Search topics, headers, tools… (press /)', searchLabel:'Search the course', lang:'עברית', langLabel:'החלפה לעברית', chapters:'Chapters',
-  chapterCard:'CHAPTER ', subject:'SUBJECT ', practice:'Practice quiz', sums:'Chapter summaries', sumBtn:'Chapter summary', sumEye:'Summary · Chapter ', sumBig:'The big idea', sumPts:'Key points', sumKeys:'Must remember for the exam', sumFull:'Read the full chapter', sumQuiz:'Chapter quiz', sumPrint:'Print / PDF', sumPrev:'Previous summary', sumNext:'Next summary', sumEnd:'Finished the chapter? The whole chapter in a two-minute read: the big idea, the key points and what to remember.', sumAllEye:'Chapter summaries', sumAllH:'All summaries', sumAllLead:'A short summary of every chapter in both courses: the big idea, the key points with a link to the section, and what to remember for the exam. Print a whole course as a revision booklet.', sumAll:'All courses', sumOpen:'Open the full summary', course:'Course', anim1:'1 animation', animN:' animations', reading:'reading'
+  chapterCard:'CHAPTER ', subject:'SUBJECT ', practice:'Practice quiz', sums:'Chapter summaries', sumBtn:'Chapter summary', sumEye:'Summary · Chapter ', sumBig:'The big idea', sumPts:'Key points', sumKeys:'Must remember for the exam', sumFull:'Read the full chapter', sumQuiz:'Chapter quiz', sumPrint:'Print / PDF', sumPrev:'Previous summary', sumNext:'Next summary', sumEnd:'Finished the chapter? The whole chapter in a two-minute read: the big idea, the key points and what to remember.', sumAllEye:'Chapter summaries', sumAllH:'All summaries', sumAllLead:'A short summary of every chapter in both courses: the big idea, the key points with a link to the section, and what to remember for the exam. Print a whole course as a revision booklet.', sumAll:'All courses', sumOpen:'Open the full summary', course:'Course', anim1:'1 animation', animN:' animations', reading:'reading', doneOff:'Mark as done', doneOn:'Done', doneEnd:'Finished the chapter? Mark it as done to track your progress.'
 };
 const lab = id => id.toUpperCase();
 const courseOf = id => COURSES.find(k => k.subj.some(g => g.ch.includes(id)));
@@ -533,6 +538,7 @@ async function chapter(id, sec){
   if (window.Quiz && !w.querySelector('.quiz-mount') && Quiz.count(id)) { const qm = document.createElement('div'); qm.className = 'quiz-mount'; qm.dataset.quiz = id; const ls = w.querySelectorAll('section'); (ls.length ? ls[ls.length - 1] : w).appendChild(qm); }
   if (window.Quiz) w.querySelectorAll('.quiz-mount').forEach(m => Quiz.mount(m, m.dataset.quiz));
   sumHooks(w, id);
+  doneHooks(w, id);
   w.querySelectorAll('script').forEach(old => { const s = document.createElement('script'); s.textContent = old.textContent; old.replaceWith(s); });
   if (sec) { const t = w.querySelector('#' + CSS.escape(sec)); if (t) { t.scrollIntoView(); return; } }
   window.scrollTo(0, 0);
@@ -566,6 +572,19 @@ function sumHooks(w, id){
   const end = document.createElement('div'); end.className = 'sum-end';
   end.innerHTML = '<p>' + esc(L.sumEnd) + '</p><a class="sum-btn" href="#sum-' + id + '">≡ ' + esc(L.sumBtn) + '</a>';
   w.appendChild(end);
+}
+// one toggle at the top of the chapter and one at the end; both reflect the same state
+function doneHooks(w, id){
+  const paint = () => w.querySelectorAll('.done-btn').forEach(b => {
+    const on = Progress.has(id);
+    b.setAttribute('aria-pressed', on); b.textContent = on ? '✓ ' + L.doneOn : L.doneOff;
+  });
+  const mk = () => { const b = document.createElement('button'); b.type = 'button'; b.className = 'done-btn'; b.onclick = () => { Progress.set(id, !Progress.has(id)); paint(); }; return b; };
+  const head = $('header.top', w); if (head) head.appendChild(mk());
+  let end = $('.sum-end', w);
+  if (!end) { end = document.createElement('div'); end.className = 'sum-end'; end.innerHTML = '<p>' + esc(L.doneEnd) + '</p>'; w.appendChild(end); }
+  end.appendChild(mk());
+  paint();
 }
 function tocOf(html){
   const m = {}, nav = html.split('</nav>')[0];
